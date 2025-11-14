@@ -4,6 +4,7 @@
   "description": "Monorepo for the HR Payroll Subsystem (NestJS/NextJS/MongoDB) covering configuration, processing, execution, and employee self-service features.",
   "private": true,
   "main": "index.js",
+  "packageManager": "npm@10.8.1",
   "scripts": {
     "start:api:prod": "npm run build:api && node dist/apps/payroll-api/main.js",
     "start:web:prod": "turbo run start --filter=payroll-web",
