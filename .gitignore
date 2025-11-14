@@ -1,0 +1,88 @@
+1. DEPENDENCIES / BUILD OUTPUT
+
+Dependency directories
+Ignore all node_modules folders across the monorepo
+node_modules/
+
+Next.js build and cache output
+This is where Next.js compiles the frontend code
+.next/
+/out/
+.swc/
+
+NestJS / TypeScript compilation output
+This is where NestJS compiles the backend code
+/dist
+/build
+
+Cache and temporary directories
+.cache/
+.temp/
+.tmp/
+.eslintcache
+.turbo/           # If using Turborepo or another build system
+
+TypeScript specific files
+*.tsbuildinfo
+
+
+2. SENSITIVE & LOCAL CONFIGURATION
+
+Environment variables (CRITICAL: Do NOT commit secrets)
+This ignores all .env files (e.g., .env, .env.local, .env.development)
+.env
+.env.*
+!.env.example  # KEEP example file to show required variables (MUST be safe/dummy data)
+
+Keys and Certificates
+*.key
+*.pem
+*.pub
+/cert/
+
+Deployment specific files (Vercel, Heroku, etc.)
+.vercel/
+
+
+3. LOGS & DEBUGGING
+
+Logs
+logs.log
+npm-debug.log
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+Test coverage results
+/coverage
+
+
+4. IDE & OS SPECIFIC FILES
+
+JetBrains IDEs (WebStorm, IntelliJ IDEA, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode-test/
+
+VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+OSX
+.DS_Store
+
+Windows
+Thumbs.db
+
