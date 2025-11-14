@@ -46,6 +46,8 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.9",
     "axios": "^1.13.2",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
     "mongoose": "^8.19.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -60,7 +62,6 @@
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "autoprefixer": "^10.4.22",
-    "turbo": "^2.0.4",
     "jest": "^30.2.0",
     "next": "^14.0.0",
     "postcss": "^8.5.6",
@@ -70,6 +71,7 @@
     "tailwindcss": "^4.1.17",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
+    "turbo": "^2.0.4",
     "typescript": "^5.9.3"
   }
 }
