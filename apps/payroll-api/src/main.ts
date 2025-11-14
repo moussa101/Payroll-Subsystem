@@ -1,31 +1,39 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
-
-// Define the port, defaulting to 3000
-const PORT = process.env.PORT || 3000;
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
 
-    // Apply a global validation pipe for all incoming request DTOs
-    app.useGlobalPipes(new ValidationPipe({
-        whitelist: true, // Remove properties that are not defined in the DTO
-        transform: true, // Automatically transform payloads to be objects of the DTO classes
-        forbidNonWhitelisted: true, // Throw an error if non-whitelisted properties are present
-    }));
+    const configService = app.get(ConfigService);
+    const portFromEnv =
+        configService.get<string>('API_PORT') ?? configService.get<string>('PORT');
+    const PORT = Number.isFinite(Number(portFromEnv)) ? Number(portFromEnv) : 4000;
 
-    // Enable CORS for frontend communication (adjust origins in a production environment)
+    const GLOBAL_PREFIX = 'api';
+    app.setGlobalPrefix(GLOBAL_PREFIX);
+
+    app.useGlobalPipes(
+        new ValidationPipe({
+            whitelist: true,
+            transform: true,
+            forbidNonWhitelisted: true,
+        }),
+    );
+
+    const frontendUrl = configService.get<string>('FRONTEND_URL') || undefined;
     app.enableCors({
-        origin: '*', // Allow all origins for development
+        origin: frontendUrl ?? true,
+        credentials: Boolean(frontendUrl),
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-        credentials: true,
     });
 
     await app.listen(PORT);
     Logger.log(
-        `🚀 Payroll API is running on: http://localhost:${PORT}`,
-        'Bootstrap'
+        `🚀 Payroll API is running on: http://localhost:${PORT}/${GLOBAL_PREFIX}`,
+        'Bootstrap',
     );
 }
+
 bootstrap();

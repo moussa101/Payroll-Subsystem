@@ -20,7 +20,7 @@ Cache and temporary directories
 .temp/
 .tmp/
 .eslintcache
-.turbo/           # If using Turborepo or another build system
+/.turbo           # If using Turborepo or another build system
 
 TypeScript specific files
 *.tsbuildinfo
@@ -84,4 +84,6 @@ OSX
 
 Windows
 Thumbs.db
+
+
 
