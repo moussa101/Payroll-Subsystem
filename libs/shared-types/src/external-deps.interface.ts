@@ -1,4 +1,4 @@
-// Interfaces for External System Data Awareness (Milestone 1 Integration Foundation)
+// src for External System Data Awareness (Milestone 1 Integration Foundation)
 
 /**
  * Minimal interface required from the Organization Structure (OS) module

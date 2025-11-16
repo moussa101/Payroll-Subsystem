@@ -1,4 +1,4 @@
-// Interfaces for Pay Components, Tax, Insurance, and Penalty Rules (Building Blocks)
+// src for Pay Components, Tax, Insurance, and Penalty Rules (Building Blocks)
 
 /** Used by IPayStructure to define base pay, fixed allowances, and deductions. */
 export interface IPayComponent {
