@@ -1,4 +1,3 @@
-import { Document } from 'mongoose';
 import { IPayComponent } from './payroll-utils.interface';
 import { IOrgUnit } from './external-deps.interface'; // NEW IMPORT
 
@@ -6,7 +5,7 @@ import { IOrgUnit } from './external-deps.interface'; // NEW IMPORT
  * Interface for a Pay Structure, typically representing a Pay Grade or Salary Band.
  * This links an Employee to their compensation components.
  */
-export interface IPayStructure extends Document {
+export interface IPayStructure {
     payGradeId: string; // Unique identifier for the pay grade (e.g., 'PG3', 'SE_L5')
     gradeName: string;
     status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'ARCHIVED';
