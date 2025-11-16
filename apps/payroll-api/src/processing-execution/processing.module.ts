@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ConfigurationModule } from '../configuration-policy/configuration.module';
+import { ConfigurationPolicyModule } from '../configuration-policy/configuration.module';
 
 @Module({
     imports: [
         // This module depends on Configuration for rules and policies
-        ConfigurationModule,
+        ConfigurationPolicyModule,
         // TODO: Import Mongoose Schemas for Payroll Drafts and Final Batches
     ],
     controllers: [

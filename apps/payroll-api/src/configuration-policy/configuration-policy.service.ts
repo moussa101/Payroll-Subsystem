@@ -137,5 +137,5 @@ export class ConfigurationPolicyService {
     return approvedPolicy;
   }
   
-  // Add other necessary CRUD methods (view, list, delete, approval workflow stages) for Milestone 2...
+  // Add other necessary CRUD methods (view, list, delete, approval workflow stages) for Milestone 2...
 }
