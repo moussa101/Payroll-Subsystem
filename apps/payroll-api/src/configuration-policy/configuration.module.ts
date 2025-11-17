@@ -1,20 +1,25 @@
 import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+
+// Components
+import { ConfigurationPolicyService } from './configuration-policy.service';
+import { ConfigurationPolicyController } from './configuration-policy.controller';
+
+// Schemas
+import { PayrollPolicy, PayrollPolicySchema } from './schema/payroll-pollicy.schema';
+import { PayStructure, PayStructureSchema } from './schema/pay-structure.schema';
 
 @Module({
-    imports: [
-        // TODO: Import Mongoose Schemas for Pay Grades, Tax Rules, Insurance Brackets
-    ],
-    controllers: [
-        // TODO: Controllers for policy definition (e.g., PayGradeController)
-    ],
-    providers: [
-        // TODO: Services for rule enforcement and data validation
-    ],
-    exports: [
-        // Expose services needed by the Processing Module (e.g., PolicyLookupService)
-    ]
+  imports: [
+    // Register the models and schemas for this module
+    MongooseModule.forFeature([
+      { name: PayrollPolicy.name, schema: PayrollPolicySchema },
+      { name: PayStructure.name, schema: PayStructureSchema },
+    ]),
+  ],
+  controllers: [ConfigurationPolicyController],
+  providers: [ConfigurationPolicyService],
+  // CRUCIAL: Export the service so the downstream Payroll Processing module can access the configurations!
+  exports: [ConfigurationPolicyService, MongooseModule], 
 })
-export class ConfigurationModule {}
-
-
-// wait for team 1 to finish their work on the configuration module before implementing the TODOs
+export class ConfigurationPolicyModule {}
