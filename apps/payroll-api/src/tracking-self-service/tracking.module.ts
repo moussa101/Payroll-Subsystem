@@ -6,7 +6,7 @@ import { TrackingController } from './tracking.controller';
 import { TrackingService } from './tracking.service';
 
 // Schemas
-import { Payroll, PayrollSchema } from './schema/payroll.schema';
+import { Payslip, PayslipSchema } from './schema/payslip.schema';
 import { ExpenseClaim, ExpenseClaimSchema } from './schema/claim.schema';
 import { PayrollDispute, PayrollDisputeSchema } from './schema/dispute.schema';
 
@@ -17,7 +17,7 @@ import { PayrollDispute, PayrollDisputeSchema } from './schema/dispute.schema';
 
         // TODO: Import Mongoose Schemas for Disputes and Claims
         MongooseModule.forFeature([
-            { name: Payroll.name, schema: PayrollSchema },
+            { name: Payslip.name, schema: PayslipSchema },
             { name: ExpenseClaim.name, schema: ExpenseClaimSchema },
             { name: PayrollDispute.name, schema: PayrollDisputeSchema },
         ]),
