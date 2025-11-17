@@ -1,53 +1,47 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigurationPolicyModule } from '../configuration-policy/configuration.module';
+
 import { Schema } from 'mongoose';
 
-// Import the schemas defined in your subsystem (inline placeholders)
-// These minimal placeholders prevent the "Cannot find module" error;
-// replace with full schema definitions in separate files when available.
-
+// --- PayrollRun Schema and Class ---
 export class PayrollRun {}
 export const PayrollRunSchema = new Schema({
-    // add PayrollRun fields here, e.g.:
-    // periodStart: { type: Date, required: true },
-    // periodEnd: { type: Date, required: true },
+    periodStart: { type: Date, required: true },
+    periodEnd: { type: Date, required: true },
+    // Add other essential fields if you hate yourself less than usual
 }, { timestamps: true });
 
+// --- EmployeePayRecord Schema and Class ---
 export class EmployeePayRecord {}
 export const EmployeePayRecordSchema = new Schema({
-    // add EmployeePayRecord fields here, e.g.:
-    // employeeId: { type: String, required: true },
-    // grossPay: { type: Number, required: true },
+    employeeId: { type: String, required: true },
+    grossPay: { type: Number, required: true },
+    // Expand/modify if you ever wake up feeling ambitious
 });
 
+// --- PenaltyDeduction Schema and Class ---
 export class PenaltyDeduction {}
 export const PenaltyDeductionSchema = new Schema({
-    // add PenaltyDeduction fields here, e.g.:
-    // reason: { type: String },
-    // amount: { type: Number },
+    reason: { type: String },
+    amount: { type: Number },
+    // All deductions conveniently ignored until milestone 2 panic
 });
+
+import { ProcessingExecutionController } from './processing-execution.controller';
+import { ProcessingExecutionService } from './processing-execution.service';
 
 @Module({
     imports: [
-        // This module depends on Configuration for rules and policies (Team 1 dependency)
         ConfigurationPolicyModule,
-        
-        // Register Mongoose Schemas for Payroll Drafts and Final Batches
         MongooseModule.forFeature([
             { name: PayrollRun.name, schema: PayrollRunSchema },
             { name: EmployeePayRecord.name, schema: EmployeePayRecordSchema },
             { name: PenaltyDeduction.name, schema: PenaltyDeductionSchema },
         ]),
     ],
-    controllers: [
-        // TODO: Controllers for initiation, simulation, and execution (Milestone 2)
-    ],
-    providers: [
-        // TODO: Services for calculation logic, draft generation, and anomaly flagging (Milestone 2)
-    ],
-    exports: [
-        // Expose services needed by the Tracking Module (e.g., PayslipGenerationService) (Milestone 2)
-    ]
+    controllers: [ProcessingExecutionController],
+    providers: [ProcessingExecutionService],
+    exports: [ProcessingExecutionService],
 })
 export class ProcessingModule {}
