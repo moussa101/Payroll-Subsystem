@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { EmployeePayRecord } from './schema/EmployeePayRecord.schema';
+import { EmployeePayRecord } from './schema/employee-pay-record.schema';
 
 @Injectable()
 export class ProcessingExecutionService {

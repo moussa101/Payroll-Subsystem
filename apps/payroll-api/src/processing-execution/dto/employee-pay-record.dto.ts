@@ -4,7 +4,7 @@ class PayComponentDto {
   @IsString()
   componentName: string;
 
-  @IsString() // Should be an enum, but let's stick to your schema for now
+  @IsString()
   type: 'Earning' | 'Deduction' | 'Statutory';
 
   @IsNumber()

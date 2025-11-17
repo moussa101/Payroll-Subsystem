@@ -9,7 +9,6 @@ export class PayrollRun {}
 export const PayrollRunSchema = new Schema({
     periodStart: { type: Date, required: true },
     periodEnd: { type: Date, required: true },
-    // Add other essential fields if you hate yourself less than usual
 }, { timestamps: true });
 
 // --- EmployeePayRecord Schema and Class ---
@@ -17,7 +16,6 @@ export class EmployeePayRecord {}
 export const EmployeePayRecordSchema = new Schema({
     employeeId: { type: String, required: true },
     grossPay: { type: Number, required: true },
-    // Expand/modify if you ever wake up feeling ambitious
 });
 
 // --- PenaltyDeduction Schema and Class ---
@@ -25,7 +23,6 @@ export class PenaltyDeduction {}
 export const PenaltyDeductionSchema = new Schema({
     reason: { type: String },
     amount: { type: Number },
-    // All deductions conveniently ignored until milestone 2 panic
 });
 
 import { ProcessingExecutionController } from './processing-execution.controller';
