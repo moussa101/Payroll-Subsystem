@@ -30,7 +30,7 @@ TypeScript specific files
 
 Environment variables (CRITICAL: Do NOT commit secrets)
 This ignores all .env files (e.g., .env, .env.local, .env.development)
-.env
+backend/.env
 !.env.example  # KEEP example file to show required variables (MUST be safe/dummy data)
 
 Keys and Certificates
