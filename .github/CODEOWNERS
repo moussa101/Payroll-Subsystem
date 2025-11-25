@@ -1,44 +1,56 @@
-# CODEOWNERS File for HR System (Payroll Subsystem Integration)
+CODEOWNERS File for HR System (Payroll Subsystem Integration)
 
-This file defines who owns specific parts of the codebase. GitHub automatically requests reviews from these owners when a Pull Request touches these files.
+This file defines who owns specific parts of the codebase.
 
----
+GitHub automatically requests reviews from these owners when a Pull Request touches these files.
 
-## 1. BACKEND MODULE OWNERSHIP (NestJS)
+-------------------------------------------------------------------
 
-### 1.1 Payroll Configuration & Policy Subsystem
+1. BACKEND MODULE OWNERSHIP (NestJS)
+
+-------------------------------------------------------------------
+
+1.1 Payroll Configuration & Policy Subsystem
+
 Files defining core policies, pay grades, tax rules, and insurance.
 
-**Owner:** Moussa  
-`/backend/src/payroll-configuration/` @moussa101
+Owner: Moussa
 
-### 1.2 Payroll Processing & Execution Subsystem
+/backend/src/payroll-configuration/ @moussa101
+
+1.2 Payroll Processing & Execution Subsystem
+
 Files handling salary calculation, payroll runs, penalties, and payslip generation.
 
-**Owner:** Omar  
-`/backend/src/payroll-execution/` @omarbelo23
+Owner: Omar
 
-### 1.3 Payroll Tracking, Transparency & Self-Service Subsystem
+/backend/src/payroll-execution/ @omarbelo23
+
+1.3 Payroll Tracking, Transparency & Self-Service Subsystem
+
 Files handling employee disputes, claims, and tracking history.
 
-**Owner:** Marwan  
-`/backend/src/payroll-tracking/` @MarwanHulk
+Owner: Marwan
 
----
+/backend/src/payroll-tracking/ @MarwanHulk
 
-## 2. SHARED INFRASTRUCTURE & GLOBAL CONFIGURATION
+-------------------------------------------------------------------
 
-### Root Backend Configuration
+2. SHARED INFRASTRUCTURE & GLOBAL CONFIGURATION
+
+-------------------------------------------------------------------
+
+Root Backend Configuration
+
 Changes to the app module, database connection, or package dependencies require consensus.
 
-`/backend/package.json` @moussa101 @omarbelo23 @MarwanHulk  
-`/backend/nest-cli.json` @moussa101 @omarbelo23 @MarwanHulk  
-`/backend/src/app.module.ts` @moussa101 @omarbelo23 @MarwanHulk  
-`/backend/src/main.ts` @moussa101 @omarbelo23 @MarwanHulk
+/backend/package.json @moussa101 @omarbelo23 @MarwanHulk
+/backend/nest-cli.json @moussa101 @omarbelo23 @MarwanHulk
+/backend/src/app.module.ts @moussa101 @omarbelo23 @MarwanHulk
+/backend/src/main.ts @moussa101 @omarbelo23 @MarwanHulk
 
----
+Default Fallback
 
-## Default Fallback
 Any file not covered above is technically owned by the whole team.
 
-`*` @moussa101 @omarbelo23 @MarwanHulk
+@moussa101 @omarbelo23 @MarwanHulk
