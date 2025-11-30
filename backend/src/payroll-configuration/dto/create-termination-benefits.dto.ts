@@ -1,7 +1,7 @@
-// backend/src/payroll-configuration/dto/create-termination-benefit.dto.ts
+// backend/src/payroll-configuration/dto/create-termination-benefits.dto.ts
 import { IsString, IsNotEmpty, IsNumber, Min, IsOptional } from 'class-validator';
 
-export class CreateTerminationBenefitDto {
+export class CreateTerminationBenefitsDto {
   @IsString()
   @IsNotEmpty()
   name: string;
