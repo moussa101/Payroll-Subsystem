@@ -1,3 +1,4 @@
+// backend/src/payroll-configuration/dto/update-company-settings.dto.ts
 import { IsString, IsOptional, IsDateString } from 'class-validator';
 
 export class UpdateCompanySettingsDto {
