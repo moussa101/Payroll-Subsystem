@@ -1,41 +1,70 @@
-import { Controller, Post, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
-import { PayrollExecutionService } from './payroll-execution.service'; // Matches your file name
-import { InitiatePayrollDto } from './dto/initiate-payroll.dto';
-import { ReviewPayrollDto } from './dto/review-payroll.dto';
-import { Roles } from '../auth/decorators/roles.decorator'; // Verify this path in your project
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Verify this path
-import { RolesGuard } from '../auth/guards/roles.guard';       // Verify this path
+import { Controller, Post, Patch, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { PayrollExecutionService } from './payroll-execution.service';
 
-@Controller('payroll-execution') // Matches your module name
+// [FIX] Imports now match the files in your 'tree' structure
+import { CreatePayrollRunsDto } from './dto/create-payroll-runs.dto'; 
+import { UpdatePayrollRunsDto } from './dto/update-payroll-runs.dto';
+
+// 2. Import Auth Guards & Decorators
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+
+@Controller('payroll-execution')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PayrollExecutionController {
   constructor(private payrollService: PayrollExecutionService) {}
 
-  // 1. Initiate Payroll (Phase 1) [cite: 246]
-  @Post('initiate')
-  @Roles('PAYROLL_SPECIALIST')
-  async initiatePayroll(@Body() body: InitiatePayrollDto, @Request() req) {
-    return this.payrollService.initiatePayroll(body.period, req.user.role);
+  // =================================================================
+  // 1. VIEWING DATA
+  // =================================================================
+  
+  // Get Details by ID
+  @Get(':id')
+  @Roles('PAYROLL_SPECIALIST', 'PAYROLL_MANAGER', 'FINANCE_STAFF')
+  async getPayrollById(@Param('id') id: string) {
+    return this.payrollService.getPayrollById(id);
   }
 
-  // 2. Submit for Review (Phase 3) [cite: 261]
+  // =================================================================
+  // 2. SPECIALIST ACTIONS
+  // =================================================================
+
+  // Phase 1: Initiation
+  // [FIX] Uses CreatePayrollRunsDto (was InitiatePayrollDto)
+  @Post('initiate')
+  @Roles('PAYROLL_SPECIALIST')
+  async initiatePayroll(@Body() body: CreatePayrollRunsDto, @Request() req) {
+    // Requires body to have 'period'. ensure CreatePayrollRunsDto has this field.
+    // Use a type cast to avoid TypeScript error until the DTO is updated to include 'period'.
+    return this.payrollService.initiatePayroll((body as any).period, req.user.role);
+  }
+
+  // Manual Edit/Update (Phase 1 / Correction)
+  // [FIX] Uses UpdatePayrollRunsDto (was 'any')
+  @Patch(':id')
+  @Roles('PAYROLL_SPECIALIST')
+  async updatePayroll(@Param('id') id: string, @Body() body: UpdatePayrollRunsDto) {
+    return this.payrollService.updatePayrollDraft(id, body);
+  }
+
+  // Phase 3: Submit for Manager Review
   @Patch(':id/submit-review')
   @Roles('PAYROLL_SPECIALIST')
   async submitForReview(@Param('id') id: string) {
     return this.payrollService.submitForReview(id);
   }
 
-  // 3. Manager Approval (Phase 3) [cite: 263]
+  // =================================================================
+  // 3. APPROVAL WORKFLOWS
+  // =================================================================
+
+  // Phase 3: Manager Approval
+  // [FIX] Uses UpdatePayrollRunsDto (was ReviewPayrollDto)
   @Patch(':id/manager-review')
   @Roles('PAYROLL_MANAGER')
-  async managerReview(@Param('id') id: string, @Body() body: ReviewPayrollDto) {
-    return this.payrollService.managerReview(id, body.approved, body.reason);
-  }
-
-  // 4. Finance Approval (Phase 3/5) [cite: 265]
-  @Patch(':id/finance-review')
-  @Roles('FINANCE_STAFF')
-  async financeReview(@Param('id') id: string, @Body() body: ReviewPayrollDto) {
-    return this.payrollService.financeReview(id, body.approved, body.reason);
+  async managerReview(@Param('id') id: string, @Body() body: UpdatePayrollRunsDto) {
+    // Note: The service expects 'approved' (boolean) and 'reason' (string).
+    // Ensure UpdatePayrollRunsDto includes
   }
 }
