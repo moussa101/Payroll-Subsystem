@@ -5,14 +5,18 @@ import { paySlip, PayslipDocument } from './models/payslip.schema';
 import { EmployeeProfile } from '../employee-profile/models/employee-profile.schema';
 import { employeePenalties } from './models/employeePenalties.schema';
 import { employeeSigningBonus } from './models/EmployeeSigningBonus.schema';
-import { employeeTerminationResignation } from './models/EmployeeTerminationResignation.schema';
-import { EmployeePayrollDetails } from './models/employeePayrollDetails.schema';
-import { CreatePayslipDto, UpdatePayslipDto, EarningsDto, DeductionsDto } from './dto/create-payslip.dto';
+import { EmployeeTerminationResignation } from './models/EmployeeTerminationResignation.schema';
+import { employeePayrollDetails } from './models/employeePayrollDetails.schema';
+import { CreatePayslipDto, EarningsDto, DeductionsDto } from './dto/create-payslip.dto';
 import { PaySlipPaymentStatus, BenefitStatus } from './enums/payroll-execution-enum';
-import { CreateEmployeePenaltiesDto, UpdateEmployeePenaltiesDto } from './dto/create-employee-penalties.dto';
-import { CreateSigningBonusDto, UpdateSigningBonusDto } from './dto/create-signing-bonus.dto';
-import { CreateEmployeeTerminationResignationDto, UpdateEmployeeTerminationResignationDto } from './dto/create-termination-resignation-benefits.dto';
-import { CreatePayrollRunsDto, UpdatePayrollRunsDto } from './dto/create-payroll-runs.dto';
+import { CreateEmployeePenaltiesDto } from './dto/create-employee-penalties.dto';
+import { CreateSigningBonusDto } from './dto/create-signing-bonus.dto';
+import { CreateEmployeeTerminationResignationDto } from './dto/create-termination-resignation-benefits.dto';
+import { UpdateEmployeeTerminationResignationDto } from './dto/update-termination-resignation-benefits.dto';
+import { CreatePayrollRunsDto } from './dto/create-payroll-runs.dto';
+import { UpdatePayrollRunsDto } from './dto/update-payroll-runs.dto';
+
+
 
 @Injectable()
 export class PayrollCalculationService {
@@ -20,13 +24,13 @@ export class PayrollCalculationService {
     @InjectModel(paySlip.name) private payslipModel: Model<PayslipDocument>,
     @InjectModel(employeePenalties.name) private penaltiesModel: Model<employeePenalties>,
     @InjectModel(employeeSigningBonus.name) private signingBonusModel: Model<employeeSigningBonus>,
-    @InjectModel(employeeTerminationResignation.name) private terminationModel: Model<employeeTerminationResignation>,
-    @InjectModel(EmployeePayrollDetails.name) private payrollDetailsModel: Model<EmployeePayrollDetails>,
+    @InjectModel(EmployeeTerminationResignation.name) private terminationModel: Model<EmployeeTerminationResignation>,
+    @InjectModel(employeePayrollDetails.name) private payrollDetailsModel: Model<employeePayrollDetails>,
   ) {}
 
   // -------------------
   // Create or update payslip
-  async upsertPayslip(dto: CreatePayslipDto | UpdatePayslipDto) {
+  async upsertPayslip(dto: CreatePayslipDto) {
     const existing = await this.payslipModel.findOne({
       employeeId: dto.employeeId,
       payrollRunId: dto.payrollRunId,
@@ -75,7 +79,7 @@ export class PayrollCalculationService {
 
   // -------------------
   // Example: handle penalties
-  async upsertEmployeePenalties(dto: CreateEmployeePenaltiesDto | UpdateEmployeePenaltiesDto) {
+  async upsertEmployeePenalties(dto: CreateEmployeePenaltiesDto) {
     const existing = await this.penaltiesModel.findOne({ employeeId: dto.employeeId });
     if (existing) {
       await this.penaltiesModel.findByIdAndUpdate(existing._id, dto, { new: true });
@@ -88,7 +92,7 @@ export class PayrollCalculationService {
 
   // -------------------
   // Example: handle signing bonuses
-  async upsertSigningBonus(dto: CreateSigningBonusDto | UpdateSigningBonusDto) {
+  async upsertSigningBonus(dto: CreateSigningBonusDto) {
     const existing = await this.signingBonusModel.findOne({ positionName: dto.positionName });
     if (existing) {
       await this.signingBonusModel.findByIdAndUpdate(existing._id, dto, { new: true });
