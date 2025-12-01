@@ -112,6 +112,9 @@ export class PayrollConfigurationController {
   updatePayrollPolicy(@Param('id') id: string, @Body() dto: UpdatePayrollPoliciesDto, @Req() req: Request & { user: AuthUser }) {
     return this.configService.updatePayrollPolicy(id, dto, req.user);
   }
+
+  @Get('policies')
+  getPayrollPolicies() { return this.configService.getPayrollPolicies(); }
   
   @Patch('policies/:id/status')
   @Roles(UserRole.HR_MANAGER) // Higher approval for core policies
@@ -229,6 +232,9 @@ export class PayrollConfigurationController {
     return this.configService.updatePayType(id, dto, req.user);
   }
 
+  @Get('pay-types')
+  getPayTypes() { return this.configService.getPayTypes(); }
+
   @Patch('pay-types/:id/status')
   @Roles(UserRole.PAYROLL_MANAGER)
   changePayTypeStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
@@ -257,6 +263,9 @@ export class PayrollConfigurationController {
     return this.configService.updateSigningBonus(id, dto, req.user);
   }
 
+  @Get('signing-bonuses')
+  getSigningBonuses() { return this.configService.getSigningBonuses(); }
+
   @Patch('signing-bonuses/:id/status')
   @Roles(UserRole.PAYROLL_MANAGER)
   changeBonusStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
@@ -284,6 +293,9 @@ export class PayrollConfigurationController {
   updateTermination(@Param('id') id: string, @Body() dto: UpdateTerminationBenefitsDto, @Req() req: Request & { user: AuthUser }) {
     return this.configService.updateTerminationBenefit(id, dto, req.user);
   }
+
+  @Get('termination-benefits')
+  getTerminationBenefits() { return this.configService.getTerminationBenefits(); }
   
   @Patch('termination-benefits/:id/status')
   @Roles(UserRole.PAYROLL_MANAGER)

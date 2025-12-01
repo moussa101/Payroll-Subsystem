@@ -211,6 +211,10 @@ export class PayrollConfigurationService {
     return record.save();
   }
 
+  async getPayrollPolicies() {
+    return this.payrollPoliciesModel.find().exec();
+  }
+
   async changePayrollPolicyStatus(id: string, dto: ChangeStatusDto, user: AuthUser) {
     return this.approveGeneric(this.payrollPoliciesModel, id, dto, user);
   }
@@ -353,6 +357,10 @@ export class PayrollConfigurationService {
     return record.save();
   }
 
+  async getPayTypes() {
+    return this.payTypeModel.find().exec();
+  }
+
   async approvePayType(id: string, dto: ChangeStatusDto, user: AuthUser) {
     return this.approveGeneric(this.payTypeModel, id, dto, user);
   }
@@ -398,6 +406,10 @@ export class PayrollConfigurationService {
     return record.save();
   }
 
+  async getSigningBonuses() {
+    return this.bonusModel.find().exec();
+  }
+
   async approveSigningBonus(id: string, dto: ChangeStatusDto, user: AuthUser) {
     return this.approveGeneric(this.bonusModel, id, dto, user);
   }
@@ -430,6 +442,10 @@ export class PayrollConfigurationService {
     Object.assign(record, dto);
     record.createdBy = new Types.ObjectId(user.userId);
     return record.save();
+  }
+
+  async getTerminationBenefits() {
+    return this.termModel.find().exec();
   }
 
   async approveTerminationBenefit(id: string, dto: ChangeStatusDto, user: AuthUser) {
