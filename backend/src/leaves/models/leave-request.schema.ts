@@ -7,7 +7,7 @@ export type LeaveRequestDocument = HydratedDocument<LeaveRequest>;
 
 @Schema({ timestamps: true })
 export class LeaveRequest {
-  @Prop({ type: Types.ObjectId, ref: 'Employee', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'EmployeeProfile', required: true })
   employeeId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'LeaveType', required: true })
