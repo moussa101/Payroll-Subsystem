@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Patch, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { PayrollConfigurationService } from './payroll-configuration.service';
 import { Request } from 'express';
 
@@ -90,6 +90,12 @@ export class PayrollConfigurationController {
     return this.configService.changePayGradeStatus(id, dto, req.user);
   }
 
+  @Delete('pay-grades/:id')
+  @Roles(UserRole.PAYROLL_MANAGER)
+  deletePayGrade(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deletePayGrade(id, req.user);
+  }
+
 
   // ===========================================================================
   // 3. Payroll Policies
@@ -111,6 +117,12 @@ export class PayrollConfigurationController {
   @Roles(UserRole.HR_MANAGER) // Higher approval for core policies
   changePayrollPolicyStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
     return this.configService.changePayrollPolicyStatus(id, dto, req.user);
+  }
+
+  @Delete('policies/:id')
+  @Roles(UserRole.PAYROLL_MANAGER)
+  deletePayrollPolicy(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deletePayrollPolicy(id, req.user);
   }
 
   // ===========================================================================
@@ -136,6 +148,12 @@ export class PayrollConfigurationController {
   @Roles(UserRole.PAYROLL_MANAGER)
   changeTaxStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
     return this.configService.approveTaxRule(id, dto, req.user);
+  }
+
+  @Delete('tax-rules/:id')
+  @Roles(UserRole.PAYROLL_MANAGER)
+  deleteTaxRule(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deleteTaxRule(id, req.user);
   }
 
   // ===========================================================================
@@ -189,6 +207,12 @@ export class PayrollConfigurationController {
     return this.configService.approveAllowance(id, dto, req.user);
   }
 
+  @Delete('allowances/:id')
+  @Roles(UserRole.PAYROLL_MANAGER)
+  deleteAllowance(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deleteAllowance(id, req.user);
+  }
+
   // ===========================================================================
   // 7. Pay Types
   // ===========================================================================
@@ -209,6 +233,12 @@ export class PayrollConfigurationController {
   @Roles(UserRole.PAYROLL_MANAGER)
   changePayTypeStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
     return this.configService.approvePayType(id, dto, req.user);
+  }
+
+  @Delete('pay-types/:id')
+  @Roles(UserRole.PAYROLL_MANAGER)
+  deletePayType(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deletePayType(id, req.user);
   }
 
   // ===========================================================================
@@ -233,6 +263,12 @@ export class PayrollConfigurationController {
     return this.configService.approveSigningBonus(id, dto, req.user);
   }
 
+  @Delete('signing-bonuses/:id')
+  @Roles(UserRole.PAYROLL_MANAGER)
+  deleteSigningBonus(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deleteSigningBonus(id, req.user);
+  }
+
   // ===========================================================================
   // 9. Termination Benefits
   // ===========================================================================
@@ -253,5 +289,11 @@ export class PayrollConfigurationController {
   @Roles(UserRole.PAYROLL_MANAGER)
   changeTermStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
     return this.configService.approveTerminationBenefit(id, dto, req.user);
+  }
+
+  @Delete('termination-benefits/:id')
+  @Roles(UserRole.PAYROLL_MANAGER)
+  deleteTerminationBenefit(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deleteTerminationBenefit(id, req.user);
   }
 }

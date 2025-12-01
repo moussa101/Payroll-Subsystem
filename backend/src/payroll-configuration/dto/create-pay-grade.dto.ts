@@ -1,5 +1,5 @@
 // backend/src/payroll-configuration/dto/create-pay-grade.dto.ts
-import { IsString, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, Min, IsOptional, IsMongoId } from 'class-validator';
 
 export class CreatePayGradeDto {
   @IsString()
@@ -13,4 +13,12 @@ export class CreatePayGradeDto {
   @IsNumber()
   @Min(6000)
   grossSalary: number;
+
+  @IsMongoId()
+  @IsOptional()
+  departmentId?: string;
+
+  @IsMongoId()
+  @IsOptional()
+  positionId?: string;
 }

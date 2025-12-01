@@ -145,11 +145,18 @@ export class PayrollConfigurationService {
     if (dto.grossSalary < dto.baseSalary) {
       throw new BadRequestException('Gross Salary cannot be less than Base Salary');
     }
-    return new this.payGradeModel({
+    const payGradeData: any = {
       ...dto,
       status: ConfigStatus.DRAFT,
       createdBy: new Types.ObjectId(user.userId)
-    }).save();
+    };
+    if (dto.departmentId) {
+      payGradeData.departmentId = new Types.ObjectId(dto.departmentId);
+    }
+    if (dto.positionId) {
+      payGradeData.positionId = new Types.ObjectId(dto.positionId);
+    }
+    return new this.payGradeModel(payGradeData).save();
   }
 
   async updatePayGrade(id: string, dto: UpdatePayGradeDto, user: AuthUser): Promise<payGrade> {
@@ -158,6 +165,12 @@ export class PayrollConfigurationService {
       throw new BadRequestException('Gross Salary cannot be less than Base Salary');
     }
     Object.assign(record, dto);
+    if (dto.departmentId) {
+      record.departmentId = new Types.ObjectId(dto.departmentId);
+    }
+    if (dto.positionId) {
+      record.positionId = new Types.ObjectId(dto.positionId);
+    }
     record.createdBy = new Types.ObjectId(user.userId); // Track who last modified it
     return record.save();
   }
@@ -166,6 +179,17 @@ export class PayrollConfigurationService {
 
   async changePayGradeStatus(id: string, dto: ChangeStatusDto, user: AuthUser) {
     return this.approveGeneric(this.payGradeModel, id, dto, user);
+  }
+
+  async deletePayGrade(id: string, user: AuthUser) {
+    const record = await this.payGradeModel.findById(id);
+    if (!record) throw new NotFoundException('Pay Grade not found');
+    // Only allow deletion if in DRAFT status
+    if (record.status !== ConfigStatus.DRAFT) {
+      throw new BadRequestException('Only DRAFT pay grades can be deleted');
+    }
+    await this.payGradeModel.findByIdAndDelete(id);
+    return { message: 'Pay Grade deleted successfully' };
   }
 
   // ===========================================================================
@@ -189,6 +213,17 @@ export class PayrollConfigurationService {
 
   async changePayrollPolicyStatus(id: string, dto: ChangeStatusDto, user: AuthUser) {
     return this.approveGeneric(this.payrollPoliciesModel, id, dto, user);
+  }
+
+  async deletePayrollPolicy(id: string, user: AuthUser) {
+    const record = await this.payrollPoliciesModel.findById(id);
+    if (!record) throw new NotFoundException('Payroll Policy not found');
+    // Only allow deletion if in DRAFT status
+    if (record.status !== ConfigStatus.DRAFT) {
+      throw new BadRequestException('Only DRAFT payroll policies can be deleted');
+    }
+    await this.payrollPoliciesModel.findByIdAndDelete(id);
+    return { message: 'Payroll Policy deleted successfully' };
   }
 
   // ===========================================================================
@@ -215,6 +250,17 @@ export class PayrollConfigurationService {
   }
 
   async getTaxRules() { return this.taxRulesModel.find().exec(); }
+
+  async deleteTaxRule(id: string, user: AuthUser) {
+    const record = await this.taxRulesModel.findById(id);
+    if (!record) throw new NotFoundException('Tax Rule not found');
+    // Only allow deletion if in DRAFT status
+    if (record.status !== ConfigStatus.DRAFT) {
+      throw new BadRequestException('Only DRAFT tax rules can be deleted');
+    }
+    await this.taxRulesModel.findByIdAndDelete(id);
+    return { message: 'Tax Rule deleted successfully' };
+  }
 
   // ===========================================================================
   // 5. Insurance Brackets
@@ -277,6 +323,17 @@ export class PayrollConfigurationService {
 
   async getAllowances() { return this.allowanceModel.find().exec(); }
 
+  async deleteAllowance(id: string, user: AuthUser) {
+    const record = await this.allowanceModel.findById(id);
+    if (!record) throw new NotFoundException('Allowance not found');
+    // Only allow deletion if in DRAFT status
+    if (record.status !== ConfigStatus.DRAFT) {
+      throw new BadRequestException('Only DRAFT allowances can be deleted');
+    }
+    await this.allowanceModel.findByIdAndDelete(id);
+    return { message: 'Allowance deleted successfully' };
+  }
+
   // ===========================================================================
   // 7. Pay Types (REQ-PY-5)
   // ===========================================================================
@@ -298,6 +355,17 @@ export class PayrollConfigurationService {
 
   async approvePayType(id: string, dto: ChangeStatusDto, user: AuthUser) {
     return this.approveGeneric(this.payTypeModel, id, dto, user);
+  }
+
+  async deletePayType(id: string, user: AuthUser) {
+    const record = await this.payTypeModel.findById(id);
+    if (!record) throw new NotFoundException('Pay Type not found');
+    // Only allow deletion if in DRAFT status
+    if (record.status !== ConfigStatus.DRAFT) {
+      throw new BadRequestException('Only DRAFT pay types can be deleted');
+    }
+    await this.payTypeModel.findByIdAndDelete(id);
+    return { message: 'Pay Type deleted successfully' };
   }
 
 
@@ -334,6 +402,17 @@ export class PayrollConfigurationService {
     return this.approveGeneric(this.bonusModel, id, dto, user);
   }
 
+  async deleteSigningBonus(id: string, user: AuthUser) {
+    const record = await this.bonusModel.findById(id);
+    if (!record) throw new NotFoundException('Signing Bonus not found');
+    // Only allow deletion if in DRAFT status
+    if (record.status !== ConfigStatus.DRAFT) {
+      throw new BadRequestException('Only DRAFT signing bonuses can be deleted');
+    }
+    await this.bonusModel.findByIdAndDelete(id);
+    return { message: 'Signing Bonus deleted successfully' };
+  }
+
   // ===========================================================================
   // 9. Termination Benefits (REQ-PY-20)
   // ===========================================================================
@@ -355,5 +434,16 @@ export class PayrollConfigurationService {
 
   async approveTerminationBenefit(id: string, dto: ChangeStatusDto, user: AuthUser) {
     return this.approveGeneric(this.termModel, id, dto, user);
+  }
+
+  async deleteTerminationBenefit(id: string, user: AuthUser) {
+    const record = await this.termModel.findById(id);
+    if (!record) throw new NotFoundException('Termination Benefit not found');
+    // Only allow deletion if in DRAFT status
+    if (record.status !== ConfigStatus.DRAFT) {
+      throw new BadRequestException('Only DRAFT termination benefits can be deleted');
+    }
+    await this.termModel.findByIdAndDelete(id);
+    return { message: 'Termination Benefit deleted successfully' };
   }
 }
