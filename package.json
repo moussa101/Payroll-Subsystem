@@ -1,0 +1,11 @@
+{
+  "devDependencies": {
+    "@nestjs/testing": "^11.1.9",
+    "@types/jest": "^30.0.0"
+  },
+  "dependencies": {
+    "@nestjs/passport": "^11.0.5",
+    "class-validator": "^0.14.3",
+    "passport": "^0.7.0"
+  }
+}
