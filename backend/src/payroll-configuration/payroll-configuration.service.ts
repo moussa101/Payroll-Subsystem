@@ -17,7 +17,7 @@ import { payType } from './models/payType.schema';
 import { payrollPolicies } from './models/payrollPolicies.schema';
 import { terminationAndResignationBenefits } from './models/terminationAndResignationBenefits';
 
-// --- DTOs (FINAL CORRECTED IMPORTS: Fixing the import class names to match their file contents) ---
+// --- DTOs (Using the corrected file paths and class names) ---
 import { CreateAllowanceDto } from './dto/create-allowance.dto';
 import { UpdateAllowanceDto } from './dto/update-allowance.dto';
 
@@ -80,30 +80,32 @@ export class PayrollConfigurationService {
     if (!record) throw new NotFoundException('Record not found');
 
     if (record.status === ConfigStatus.APPROVED && dto.status === ConfigStatus.APPROVED) {
-        throw new BadRequestException('Record is already Approved');
+      throw new BadRequestException('Record is already Approved');
     }
 
     // Role Check: Only Managers/Admins can Approve
     if (dto.status === ConfigStatus.APPROVED) {
-        const allowedRoles = [UserRole.PAYROLL_MANAGER, UserRole.HR_MANAGER, UserRole.SYSTEM_ADMIN];
-        if (!allowedRoles.includes(user.role)) {
-             throw new ForbiddenException('Only Managers can approve configurations');
-        }
-        
-        record.approvedBy = new Types.ObjectId(user.userId);
-        record.approvedAt = new Date();
+      const allowedRoles = [UserRole.PAYROLL_MANAGER, UserRole.HR_MANAGER, UserRole.SYSTEM_ADMIN];
+      if (!allowedRoles.includes(user.role)) {
+        throw new ForbiddenException('Only Managers can approve configurations');
+      }
+
+      // Capture the approver's ID from the JWT token
+      record.approvedBy = new Types.ObjectId(user.userId);
+      record.approvedAt = new Date();
     }
 
     record.status = dto.status;
+    // Optional: If rejected, we could clear approvedBy/approvedAt if they existed
     return record.save();
   }
-  
+
   // Helper to ensure item is in Draft before editing (REQ-PY-1 BR)
   private async checkDraftStatus(model: Model<any>, id: string): Promise<any> {
     const record = await model.findById(id);
     if (!record) throw new NotFoundException('Record not found');
     if (record.status !== ConfigStatus.DRAFT) {
-      throw new BadRequestException(Configuration status must be DRAFT to be updated. Current status: ${record.status});
+      throw new BadRequestException(`Configuration status must be DRAFT to be updated. Current status: ${record.status}`);
     }
     return record;
   }
@@ -115,7 +117,7 @@ export class PayrollConfigurationService {
   async createSettings(dto: CreateCompanySettingsDto): Promise<CompanyWideSettings> {
     const existing = await this.settingsModel.findOne().exec();
     if (existing) {
-        throw new BadRequestException("Company settings already exist. Use PUT/update endpoint instead.");
+      throw new BadRequestException("Company settings already exist. Use PUT/update endpoint instead.");
     }
     return new this.settingsModel(dto).save();
   }
@@ -128,7 +130,7 @@ export class PayrollConfigurationService {
       return existing.save();
     }
     // If it doesn't exist, use the Update DTO values to create the first one.
-    return new this.settingsModel(dto).save(); 
+    return new this.settingsModel(dto).save();
   }
 
   async getSettings() {
@@ -143,16 +145,20 @@ export class PayrollConfigurationService {
     if (dto.grossSalary < dto.baseSalary) {
       throw new BadRequestException('Gross Salary cannot be less than Base Salary');
     }
-    return new this.payGradeModel({ ...dto, status: ConfigStatus.DRAFT, createdBy: new Types.ObjectId(user.userId) }).save();
+    return new this.payGradeModel({
+      ...dto,
+      status: ConfigStatus.DRAFT,
+      createdBy: new Types.ObjectId(user.userId)
+    }).save();
   }
 
   async updatePayGrade(id: string, dto: UpdatePayGradeDto, user: AuthUser): Promise<payGrade> {
     const record = await this.checkDraftStatus(this.payGradeModel, id);
     if (dto.grossSalary && dto.baseSalary && dto.grossSalary < record.baseSalary) {
-        throw new BadRequestException('Gross Salary cannot be less than Base Salary');
+      throw new BadRequestException('Gross Salary cannot be less than Base Salary');
     }
     Object.assign(record, dto);
-    record.createdBy = new Types.ObjectId(user.userId);
+    record.createdBy = new Types.ObjectId(user.userId); // Track who last modified it
     return record.save();
   }
 
@@ -167,7 +173,11 @@ export class PayrollConfigurationService {
   // ===========================================================================
 
   async createPayrollPolicy(dto: CreatePayrollPoliciesDto, user: AuthUser): Promise<payrollPolicies> {
-    return new this.payrollPoliciesModel({ ...dto, status: ConfigStatus.DRAFT, createdBy: new Types.ObjectId(user.userId) }).save();
+    return new this.payrollPoliciesModel({
+      ...dto,
+      status: ConfigStatus.DRAFT,
+      createdBy: new Types.ObjectId(user.userId)
+    }).save();
   }
 
   async updatePayrollPolicy(id: string, dto: UpdatePayrollPoliciesDto, user: AuthUser): Promise<payrollPolicies> {
@@ -186,7 +196,11 @@ export class PayrollConfigurationService {
   // ===========================================================================
 
   async createTaxRule(dto: CreateTaxRuleDto, user: AuthUser): Promise<taxRules> {
-    return new this.taxRulesModel({ ...dto, status: ConfigStatus.DRAFT, createdBy: new Types.ObjectId(user.userId) }).save();
+    return new this.taxRulesModel({
+      ...dto,
+      status: ConfigStatus.DRAFT,
+      createdBy: new Types.ObjectId(user.userId)
+    }).save();
   }
 
   async updateTaxRule(id: string, dto: UpdateTaxRuleDto, user: AuthUser): Promise<taxRules> {
@@ -210,17 +224,22 @@ export class PayrollConfigurationService {
     if (dto.minSalary >= dto.maxSalary) {
       throw new BadRequestException('Min Salary must be less than Max Salary');
     }
-    return new this.insuranceModel({ ...dto, status: ConfigStatus.DRAFT, createdBy: new Types.ObjectId(user.userId) }).save();
+    return new this.insuranceModel({
+      ...dto,
+      status: ConfigStatus.DRAFT,
+      createdBy: new Types.ObjectId(user.userId)
+    }).save();
   }
 
   async updateInsurance(id: string, dto: UpdateInsuranceDto, user: AuthUser): Promise<insuranceBrackets> {
     const record = await this.checkDraftStatus(this.insuranceModel, id);
-    // Combine existing and new salary fields for validation check
+
+    // Validate min < max if both are present or merged
     const newMin = dto.minSalary ?? record.minSalary;
     const newMax = dto.maxSalary ?? record.maxSalary;
 
     if (newMin >= newMax) {
-        throw new BadRequestException('Min Salary must be less than Max Salary');
+      throw new BadRequestException('Min Salary must be less than Max Salary');
     }
     Object.assign(record, dto);
     record.createdBy = new Types.ObjectId(user.userId);
@@ -238,9 +257,13 @@ export class PayrollConfigurationService {
   // ===========================================================================
 
   async createAllowance(dto: CreateAllowanceDto, user: AuthUser): Promise<allowance> {
-    return new this.allowanceModel({ ...dto, status: ConfigStatus.DRAFT, createdBy: new Types.ObjectId(user.userId) }).save();
+    return new this.allowanceModel({
+      ...dto,
+      status: ConfigStatus.DRAFT,
+      createdBy: new Types.ObjectId(user.userId)
+    }).save();
   }
-  
+
   async updateAllowance(id: string, dto: UpdateAllowanceDto, user: AuthUser): Promise<allowance> {
     const record = await this.checkDraftStatus(this.allowanceModel, id);
     Object.assign(record, dto);
@@ -259,7 +282,11 @@ export class PayrollConfigurationService {
   // ===========================================================================
 
   async createPayType(dto: CreatePayTypeDto, user: AuthUser) {
-    return new this.payTypeModel({ ...dto, status: ConfigStatus.DRAFT, createdBy: new Types.ObjectId(user.userId) }).save();
+    return new this.payTypeModel({
+      ...dto,
+      status: ConfigStatus.DRAFT,
+      createdBy: new Types.ObjectId(user.userId)
+    }).save();
   }
 
   async updatePayType(id: string, dto: UpdatePayTypeDto, user: AuthUser): Promise<payType> {
@@ -279,8 +306,21 @@ export class PayrollConfigurationService {
   // ===========================================================================
 
   async createSigningBonus(dto: CreateSigningBonusDto, user: AuthUser): Promise<signingBonus> {
-    // Org Integration Check placeholder remains
-    return new this.bonusModel({ ...dto, status: ConfigStatus.DRAFT, createdBy: new Types.ObjectId(user.userId) }).save();
+    // Org Integration Check placeholder (Integration point with Org Structure)
+    try {
+      // NOTE: This assumes OrgStructureService has a method 'findPositionByName'.
+      // if (this.orgService) {
+      //    const position = await this.orgService.findPositionByName(dto.positionName);
+      //    if (!position) throw new BadRequestException(`Position '${dto.positionName}' does not exist.`);
+      // }
+    } catch (e) {
+      // console.warn('Skipping Org Check: ' + e.message);
+    }
+    return new this.bonusModel({
+      ...dto,
+      status: ConfigStatus.DRAFT,
+      createdBy: new Types.ObjectId(user.userId)
+    }).save();
   }
 
   async updateSigningBonus(id: string, dto: UpdateSigningBonusDto, user: AuthUser): Promise<signingBonus> {
@@ -299,7 +339,11 @@ export class PayrollConfigurationService {
   // ===========================================================================
 
   async createTerminationBenefit(dto: CreateTerminationBenefitsDto, user: AuthUser) {
-    return new this.termModel({ ...dto, status: ConfigStatus.DRAFT, createdBy: new Types.ObjectId(user.userId) }).save();
+    return new this.termModel({
+      ...dto,
+      status: ConfigStatus.DRAFT,
+      createdBy: new Types.ObjectId(user.userId)
+    }).save();
   }
 
   async updateTerminationBenefit(id: string, dto: UpdateTerminationBenefitsDto, user: AuthUser) {
@@ -308,7 +352,7 @@ export class PayrollConfigurationService {
     record.createdBy = new Types.ObjectId(user.userId);
     return record.save();
   }
-  
+
   async approveTerminationBenefit(id: string, dto: ChangeStatusDto, user: AuthUser) {
     return this.approveGeneric(this.termModel, id, dto, user);
   }
