@@ -39,7 +39,7 @@ export class RefundsService {
       .exec();
 
     if (!refund) {
-      throw new NotFoundException(Refund with id "${id}" not found);
+      throw new NotFoundException(`Refund with id "${id}" not found`);
     }
 
     return refund;
@@ -51,7 +51,7 @@ export class RefundsService {
       .exec();
 
     if (!updated) {
-      throw new NotFoundException(Refund with id "${id}" not found);
+      throw new NotFoundException(`Refund with id "${id}" not found`);
     }
 
     return updated;
@@ -60,7 +60,7 @@ export class RefundsService {
   async remove(id: string): Promise<void> {
     const deleted = await this.refundModel.findByIdAndDelete(id).exec();
     if (!deleted) {
-      throw new NotFoundException(Refund with id "${id}" not found);
+      throw new NotFoundException(`Refund with id "${id}" not found`);
     }
   }
 }
