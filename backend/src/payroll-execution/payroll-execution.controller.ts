@@ -1,12 +1,13 @@
-import { Controller, Post, Patch, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Patch, Get, Body, Param, Request, UseGuards } from '@nestjs/common';
 import { PayrollExecutionService } from './payroll-execution.service';
 
-// [FIX] Imports now match the files in your 'tree' structure
+// Import DTOs
 import { CreatePayrollRunsDto } from './dto/create-payroll-runs.dto'; 
 import { UpdatePayrollRunsDto } from './dto/update-payroll-runs.dto';
 
-// 2. Import Auth Guards & Decorators
-import { Roles } from '../auth/decorators/roles.decorator';
+// Import Auth Guards & Decorators
+import { Permissions } from '../auth/decorators/roles.decorators';
+import { Permission } from '../auth/permissions.constant';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
@@ -21,7 +22,7 @@ export class PayrollExecutionController {
   
   // Get Details by ID
   @Get(':id')
-  @Roles('PAYROLL_SPECIALIST', 'PAYROLL_MANAGER', 'FINANCE_STAFF')
+  @Permissions(Permission.MANAGE_PAYROLL, Permission.APPROVE_PAYROLL, Permission.VIEW_OWN_PAYSLIP)
   async getPayrollById(@Param('id') id: string) {
     return this.payrollService.getPayrollById(id);
   }
@@ -31,9 +32,8 @@ export class PayrollExecutionController {
   // =================================================================
 
   // Phase 1: Initiation
-  // [FIX] Uses CreatePayrollRunsDto (was InitiatePayrollDto)
   @Post('initiate')
-  @Roles('PAYROLL_SPECIALIST')
+  @Permissions(Permission.MANAGE_PAYROLL)
   async initiatePayroll(@Body() body: CreatePayrollRunsDto, @Request() req) {
     // Requires body to have 'period'. ensure CreatePayrollRunsDto has this field.
     // Use a type cast to avoid TypeScript error until the DTO is updated to include 'period'.
@@ -41,16 +41,15 @@ export class PayrollExecutionController {
   }
 
   // Manual Edit/Update (Phase 1 / Correction)
-  // [FIX] Uses UpdatePayrollRunsDto (was 'any')
   @Patch(':id')
-  @Roles('PAYROLL_SPECIALIST')
+  @Permissions(Permission.MANAGE_PAYROLL)
   async updatePayroll(@Param('id') id: string, @Body() body: UpdatePayrollRunsDto) {
     return this.payrollService.updatePayrollDraft(id, body);
   }
 
   // Phase 3: Submit for Manager Review
   @Patch(':id/submit-review')
-  @Roles('PAYROLL_SPECIALIST')
+  @Permissions(Permission.MANAGE_PAYROLL)
   async submitForReview(@Param('id') id: string) {
     return this.payrollService.submitForReview(id);
   }
@@ -60,11 +59,16 @@ export class PayrollExecutionController {
   // =================================================================
 
   // Phase 3: Manager Approval
-  // [FIX] Uses UpdatePayrollRunsDto (was ReviewPayrollDto)
   @Patch(':id/manager-review')
-  @Roles('PAYROLL_MANAGER')
+  @Permissions(Permission.APPROVE_PAYROLL)
   async managerReview(@Param('id') id: string, @Body() body: UpdatePayrollRunsDto) {
-    // Note: The service expects 'approved' (boolean) and 'reason' (string).
-    // Ensure UpdatePayrollRunsDto includes
+    return this.payrollService.managerReview(id, body);
+  }
+
+  // Phase 3/5: Finance Approval
+  @Patch(':id/finance-review')
+  @Permissions(Permission.APPROVE_PAYROLL)
+  async financeReview(@Param('id') id: string, @Body() body: UpdatePayrollRunsDto) {
+    return this.payrollService.financeReview(id, body);
   }
 }
