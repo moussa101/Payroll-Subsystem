@@ -17,7 +17,7 @@ import { payType } from './models/payType.schema';
 import { payrollPolicies } from './models/payrollPolicies.schema';
 import { terminationAndResignationBenefits } from './models/terminationAndResignationBenefits';
 
-// --- DTOs (FIXED IMPORTS - Mapping Create and Update DTOs to their individual files) ---
+// --- DTOs (FINAL CORRECTED IMPORTS: Fixing the import class names to match their file contents) ---
 import { CreateAllowanceDto } from './dto/create-allowance.dto';
 import { UpdateAllowanceDto } from './dto/update-allowance.dto';
 
@@ -80,30 +80,30 @@ export class PayrollConfigurationService {
     if (!record) throw new NotFoundException('Record not found');
 
     if (record.status === ConfigStatus.APPROVED && dto.status === ConfigStatus.APPROVED) {
-      throw new BadRequestException('Record is already Approved');
+        throw new BadRequestException('Record is already Approved');
     }
 
     // Role Check: Only Managers/Admins can Approve
     if (dto.status === ConfigStatus.APPROVED) {
-      const allowedRoles = [UserRole.PAYROLL_MANAGER, UserRole.HR_MANAGER, UserRole.SYSTEM_ADMIN];
-      if (!allowedRoles.includes(user.role)) {
-        throw new ForbiddenException('Only Managers can approve configurations');
-      }
-
-      record.approvedBy = new Types.ObjectId(user.userId);
-      record.approvedAt = new Date();
+        const allowedRoles = [UserRole.PAYROLL_MANAGER, UserRole.HR_MANAGER, UserRole.SYSTEM_ADMIN];
+        if (!allowedRoles.includes(user.role)) {
+             throw new ForbiddenException('Only Managers can approve configurations');
+        }
+        
+        record.approvedBy = new Types.ObjectId(user.userId);
+        record.approvedAt = new Date();
     }
 
     record.status = dto.status;
     return record.save();
   }
-
+  
   // Helper to ensure item is in Draft before editing (REQ-PY-1 BR)
   private async checkDraftStatus(model: Model<any>, id: string): Promise<any> {
     const record = await model.findById(id);
     if (!record) throw new NotFoundException('Record not found');
     if (record.status !== ConfigStatus.DRAFT) {
-      throw new BadRequestException(`Configuration status must be DRAFT to be updated. Current status: ${record.status}`);
+      throw new BadRequestException(Configuration status must be DRAFT to be updated. Current status: ${record.status});
     }
     return record;
   }
@@ -115,7 +115,7 @@ export class PayrollConfigurationService {
   async createSettings(dto: CreateCompanySettingsDto): Promise<CompanyWideSettings> {
     const existing = await this.settingsModel.findOne().exec();
     if (existing) {
-      throw new BadRequestException("Company settings already exist. Use PUT/update endpoint instead.");
+        throw new BadRequestException("Company settings already exist. Use PUT/update endpoint instead.");
     }
     return new this.settingsModel(dto).save();
   }
@@ -128,7 +128,7 @@ export class PayrollConfigurationService {
       return existing.save();
     }
     // If it doesn't exist, use the Update DTO values to create the first one.
-    return new this.settingsModel(dto).save();
+    return new this.settingsModel(dto).save(); 
   }
 
   async getSettings() {
@@ -149,7 +149,7 @@ export class PayrollConfigurationService {
   async updatePayGrade(id: string, dto: UpdatePayGradeDto, user: AuthUser): Promise<payGrade> {
     const record = await this.checkDraftStatus(this.payGradeModel, id);
     if (dto.grossSalary && dto.baseSalary && dto.grossSalary < record.baseSalary) {
-      throw new BadRequestException('Gross Salary cannot be less than Base Salary');
+        throw new BadRequestException('Gross Salary cannot be less than Base Salary');
     }
     Object.assign(record, dto);
     record.createdBy = new Types.ObjectId(user.userId);
@@ -202,8 +202,113 @@ export class PayrollConfigurationService {
 
   async getTaxRules() { return this.taxRulesModel.find().exec(); }
 
-  // =========================================================================== To be CONTINUED
+  // ===========================================================================
+  // 5. Insurance Brackets
+  // ===========================================================================
 
+  async createInsurance(dto: CreateInsuranceDto, user: AuthUser): Promise<insuranceBrackets> {
+    if (dto.minSalary >= dto.maxSalary) {
+      throw new BadRequestException('Min Salary must be less than Max Salary');
+    }
+    return new this.insuranceModel({ ...dto, status: ConfigStatus.DRAFT, createdBy: new Types.ObjectId(user.userId) }).save();
+  }
+
+  async updateInsurance(id: string, dto: UpdateInsuranceDto, user: AuthUser): Promise<insuranceBrackets> {
+    const record = await this.checkDraftStatus(this.insuranceModel, id);
+    // Combine existing and new salary fields for validation check
+    const newMin = dto.minSalary ?? record.minSalary;
+    const newMax = dto.maxSalary ?? record.maxSalary;
+
+    if (newMin >= newMax) {
+        throw new BadRequestException('Min Salary must be less than Max Salary');
+    }
+    Object.assign(record, dto);
+    record.createdBy = new Types.ObjectId(user.userId);
+    return record.save();
+  }
+
+  async approveInsurance(id: string, dto: ChangeStatusDto, user: AuthUser) {
+    return this.approveGeneric(this.insuranceModel, id, dto, user);
+  }
+
+  async getInsuranceBrackets() { return this.insuranceModel.find().exec(); }
+
+  // ===========================================================================
+  // 6. Allowances (REQ-PY-7)
+  // ===========================================================================
+
+  async createAllowance(dto: CreateAllowanceDto, user: AuthUser): Promise<allowance> {
+    return new this.allowanceModel({ ...dto, status: ConfigStatus.DRAFT, createdBy: new Types.ObjectId(user.userId) }).save();
+  }
+  
+  async updateAllowance(id: string, dto: UpdateAllowanceDto, user: AuthUser): Promise<allowance> {
+    const record = await this.checkDraftStatus(this.allowanceModel, id);
+    Object.assign(record, dto);
+    record.createdBy = new Types.ObjectId(user.userId);
+    return record.save();
+  }
+
+  async approveAllowance(id: string, dto: ChangeStatusDto, user: AuthUser) {
+    return this.approveGeneric(this.allowanceModel, id, dto, user);
+  }
+
+  async getAllowances() { return this.allowanceModel.find().exec(); }
+
+  // ===========================================================================
+  // 7. Pay Types (REQ-PY-5)
+  // ===========================================================================
+
+  async createPayType(dto: CreatePayTypeDto, user: AuthUser) {
+    return new this.payTypeModel({ ...dto, status: ConfigStatus.DRAFT, createdBy: new Types.ObjectId(user.userId) }).save();
+  }
+
+  async updatePayType(id: string, dto: UpdatePayTypeDto, user: AuthUser): Promise<payType> {
+    const record = await this.checkDraftStatus(this.payTypeModel, id);
+    Object.assign(record, dto);
+    record.createdBy = new Types.ObjectId(user.userId);
+    return record.save();
+  }
+
+  async approvePayType(id: string, dto: ChangeStatusDto, user: AuthUser) {
+    return this.approveGeneric(this.payTypeModel, id, dto, user);
+  }
+
+
+  // ===========================================================================
+  // 8. Signing Bonus (REQ-PY-19)
+  // ===========================================================================
+
+  async createSigningBonus(dto: CreateSigningBonusDto, user: AuthUser): Promise<signingBonus> {
+    // Org Integration Check placeholder remains
+    return new this.bonusModel({ ...dto, status: ConfigStatus.DRAFT, createdBy: new Types.ObjectId(user.userId) }).save();
+  }
+
+  async updateSigningBonus(id: string, dto: UpdateSigningBonusDto, user: AuthUser): Promise<signingBonus> {
+    const record = await this.checkDraftStatus(this.bonusModel, id);
+    Object.assign(record, dto);
+    record.createdBy = new Types.ObjectId(user.userId);
+    return record.save();
+  }
+
+  async approveSigningBonus(id: string, dto: ChangeStatusDto, user: AuthUser) {
+    return this.approveGeneric(this.bonusModel, id, dto, user);
+  }
+
+  // ===========================================================================
+  // 9. Termination Benefits (REQ-PY-20)
+  // ===========================================================================
+
+  async createTerminationBenefit(dto: CreateTerminationBenefitsDto, user: AuthUser) {
+    return new this.termModel({ ...dto, status: ConfigStatus.DRAFT, createdBy: new Types.ObjectId(user.userId) }).save();
+  }
+
+  async updateTerminationBenefit(id: string, dto: UpdateTerminationBenefitsDto, user: AuthUser) {
+    const record = await this.checkDraftStatus(this.termModel, id);
+    Object.assign(record, dto);
+    record.createdBy = new Types.ObjectId(user.userId);
+    return record.save();
+  }
+  
   async approveTerminationBenefit(id: string, dto: ChangeStatusDto, user: AuthUser) {
     return this.approveGeneric(this.termModel, id, dto, user);
   }
