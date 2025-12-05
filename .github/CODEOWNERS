@@ -4,9 +4,7 @@
 /backend/src/payroll-execution/ @omarbelo23
 /backend/src/payroll-tracking/ @MarwanHulk
 
-/backend/package.json @moussa101 @omarbelo23 @MarwanHulk
-/backend/nest-cli.json @moussa101 @omarbelo23 @MarwanHulk
-/backend/src/app.module.ts @moussa101 @omarbelo23 @MarwanHulk
-/backend/src/main.ts @moussa101 @omarbelo23 @MarwanHulk
-
-* @moussa101 @omarbelo23 @MarwanHulk
+/backend/package.json @moussa101 @omarbelo23 
+/backend/nest-cli.json @moussa101 @omarbelo23 
+/backend/src/app.module.ts @moussa101 @omarbelo23 
+/backend/src/main.ts @moussa101 @omarbelo23
