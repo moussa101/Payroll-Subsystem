@@ -37,5 +37,6 @@ import { AuthModule } from 'src/auth/auth.module';
   ],
   controllers: [EmployeeProfileController],
   providers: [EmployeeProfileService],
+  exports: [EmployeeProfileService],
 })
 export class EmployeeProfileModule {}
