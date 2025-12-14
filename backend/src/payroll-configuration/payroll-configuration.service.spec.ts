@@ -892,7 +892,7 @@ describe('PayrollConfigurationService', () => {
       expect(result.status).toBe(ConfigStatus.APPROVED);
     });
 
-    it('should allow any role to reject (not just managers)', async () => {
+    it('should throw ForbiddenException when non-manager tries to reject', async () => {
       const mockUser = {
         userId: '507f1f77bcf86cd799439011',
         role: UserRole.PAYROLL_SPECIALIST, // Non-manager role
@@ -900,6 +900,37 @@ describe('PayrollConfigurationService', () => {
 
       const changeStatusDto: ChangeStatusDto = {
         status: ConfigStatus.REJECTED,
+      };
+
+      const mockRecord = {
+        _id: new Types.ObjectId(),
+        status: ConfigStatus.DRAFT,
+        save: jest.fn().mockResolvedValue({
+          _id: new Types.ObjectId(),
+          status: ConfigStatus.REJECTED,
+        }),
+      };
+
+      mockPayGradeModel.findById.mockResolvedValue(mockRecord);
+
+      await expect(
+        service.changePayGradeStatus(
+          '507f1f77bcf86cd799439011',
+          changeStatusDto,
+          mockUser as any,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow managers to reject', async () => {
+      const mockUser = {
+        userId: '507f1f77bcf86cd799439011',
+        role: UserRole.PAYROLL_MANAGER, // Manager role
+      };
+
+      const changeStatusDto: ChangeStatusDto = {
+        status: ConfigStatus.REJECTED,
+        rejectionReason: 'Incomplete information',
       };
 
       const mockRecord = {
