@@ -19,7 +19,7 @@ import {
   EmployeeQualification,
   EmployeeQualificationSchema,
 } from './models/qualification.schema';
-import { AuthModule } from 'src/auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [

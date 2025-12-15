@@ -3,8 +3,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
 // --- Auth Integration ---
-import { AuthUser } from '../auth/authorization/interfaces/auth-user.interface';
-import { UserRole } from '../auth/authorization/constants/roles.constant';
+import { AuthUser } from '../auth/auth-user.interface';
+import { UserRole } from '../auth/permissions.constant';
 
 // --- Schemas ---
 import { allowance } from './models/allowance.schema';

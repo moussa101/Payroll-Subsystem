@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { PayrollConfigurationService } from './payroll-configuration.service';
 import { PayrollConfigurationController } from './payroll-configuration.controller';
 // --- Auth Module Integration ---
-import { AuthModule } from '../auth/authentication/auth.module'; // Import AuthModule
+import { AuthModule } from '../auth/auth.module'; // Import AuthModule
 
 // Import All Schemas
 import { allowance, allowanceSchema } from './models/allowance.schema';

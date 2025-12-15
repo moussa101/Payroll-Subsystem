@@ -3,11 +3,11 @@ import { PayrollConfigurationService } from './payroll-configuration.service';
 import { Request } from 'express';
 
 // --- Auth Imports ---
-import { JwtAuthGuard } from '../auth/authorization/guards/jwt-auth.guard'; // Adjust path if needed based on your structure
-import { RolesGuard } from '../auth/authorization/guards/roles.guard'; // Adjust path if needed
-import { Roles } from '../auth/authorization/decorators/roles.decorators';
-import { UserRole } from '../auth/authorization/constants/roles.constant';
-import { AuthUser } from '../auth/authorization/interfaces/auth-user.interface';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Adjust path if needed based on your structure
+import { RolesGuard } from '../auth/guards/roles.guard'; // Adjust path if needed
+import { Roles } from '../auth/decorators/roles.decorators';
+import { UserRole } from '../auth/permissions.constant';
+import { AuthUser } from '../auth/auth-user.interface';
 
 // --- DTOs (Create & Update) ---
 import { CreateAllowanceDto } from './dto/create-allowance.dto';
