@@ -37,5 +37,6 @@ import {
   ],
   controllers: [OrganizationStructureController],
   providers: [OrganizationStructureService],
+  exports: [OrganizationStructureService],
 })
 export class OrganizationStructureModule {}
