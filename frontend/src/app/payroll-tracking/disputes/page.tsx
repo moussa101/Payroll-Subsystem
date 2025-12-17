@@ -1,5 +1,6 @@
 import { DataTable, MetricCard, SectionCard, StatusPill } from "../components";
 import { getDisputes } from "../api";
+import { DisputeActions } from "../actions";
 
 export default async function DisputesPage() {
   const disputes = await getDisputes().catch(() => []);
@@ -62,6 +63,33 @@ export default async function DisputesPage() {
               key: "status",
               label: "Status",
               render: (row) => <StatusPill status={row.status} />,
+            },
+            {
+              key: "statusHistory",
+              label: "History",
+              render: (row) =>
+                row.statusHistory && row.statusHistory.length ? (
+                  <div className="space-y-1 text-xs text-slate-200">
+                    {row.statusHistory.slice(-3).map((h, idx) => (
+                      <div key={idx} className="flex items-center gap-1">
+                        <span className="rounded bg-white/10 px-2 py-0.5 text-[11px] font-semibold">
+                          {h.status}
+                        </span>
+                        <span className="text-slate-400">
+                          {h.at ? new Date(h.at).toLocaleDateString() : ""}
+                        </span>
+                        {h.note ? <span className="text-slate-300">• {h.note}</span> : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-xs text-slate-400">—</span>
+                ),
+            },
+            {
+              key: "actions",
+              label: "Actions",
+              render: (row) => <DisputeActions dispute={row} />,
             },
           ]}
           rows={disputes}

@@ -28,6 +28,7 @@ type ClaimApi = {
   approvedAmount?: number;
   status?: string;
   updatedAt?: string;
+  statusHistory?: { status?: string; at?: string; note?: string }[];
 };
 
 type DisputeApi = {
@@ -39,6 +40,7 @@ type DisputeApi = {
   payslipId?: string;
   status?: string;
   updatedAt?: string;
+  statusHistory?: { status?: string; at?: string; note?: string }[];
 };
 
 type RefundApi = {
@@ -66,6 +68,7 @@ export async function getClaims(): Promise<ClaimRecord[]> {
     const res = await api.get("/claims");
     const items: ClaimApi[] = Array.isArray(res.data) ? res.data : [];
     return items.map((claim: ClaimApi): ClaimRecord => ({
+      id: claim._id ?? claim.claimId ?? "N/A",
       claimId: claim.claimId ?? claim._id ?? "N/A",
       claimType: claim.claimType ?? "General",
       description: claim.description ?? "",
@@ -78,6 +81,11 @@ export async function getClaims(): Promise<ClaimRecord[]> {
       updatedOn: claim.updatedAt
         ? new Date(claim.updatedAt).toISOString().split("T")[0]
         : "—",
+      statusHistory: (claim.statusHistory ?? []).map((h) => ({
+        status: h.status ?? "unknown",
+        at: h.at ? new Date(h.at).toISOString() : "",
+        note: h.note,
+      })),
     }));
   } catch (error) {
     console.error("Failed to fetch claims", error);
@@ -90,6 +98,7 @@ export async function getDisputes(): Promise<DisputeRecord[]> {
     const res = await api.get("/disputes");
     const items: DisputeApi[] = Array.isArray(res.data) ? res.data : [];
     return items.map((dispute: DisputeApi): DisputeRecord => ({
+      id: dispute._id ?? dispute.disputeId ?? "N/A",
       disputeId: dispute.disputeId ?? dispute._id ?? "N/A",
       description: dispute.description ?? "",
       employee: refToLabel(dispute.employeeId) ?? "Unknown employee",
@@ -99,11 +108,32 @@ export async function getDisputes(): Promise<DisputeRecord[]> {
       updatedOn: dispute.updatedAt
         ? new Date(dispute.updatedAt).toISOString().split("T")[0]
         : "—",
+      statusHistory: (dispute.statusHistory ?? []).map((h) => ({
+        status: h.status ?? "unknown",
+        at: h.at ? new Date(h.at).toISOString() : "",
+        note: h.note,
+      })),
     }));
   } catch (error) {
     console.error("Failed to fetch disputes", error);
     throw error;
   }
+}
+
+export async function approveClaim(id: string, approvedAmount?: number, resolutionComment?: string) {
+  await api.post(`/claims/${id}/approve`, { approvedAmount, resolutionComment });
+}
+
+export async function rejectClaim(id: string, rejectionReason?: string) {
+  await api.post(`/claims/${id}/reject`, { rejectionReason });
+}
+
+export async function approveDispute(id: string, refundAmount?: number, resolutionComment?: string) {
+  await api.post(`/disputes/${id}/approve`, { refundAmount, resolutionComment });
+}
+
+export async function rejectDispute(id: string, rejectionReason?: string) {
+  await api.post(`/disputes/${id}/reject`, { rejectionReason });
 }
 
 export async function getRefunds(): Promise<RefundRecord[]> {

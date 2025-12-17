@@ -1,5 +1,5 @@
 import { DataTable, MetricCard, SectionCard, StatusPill } from "./components";
-import { getClaims, getDisputes, getRefunds } from "./api";
+import { getApiBaseUrl, getClaims, getDisputes, getRefunds } from "./api";
 
 const currency = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -12,6 +12,7 @@ export default async function PayrollTrackingPage() {
     getDisputes().catch(() => []),
     getRefunds().catch(() => []),
   ]);
+  const apiBase = getApiBaseUrl();
 
   const claims = liveClaims;
   const disputes = liveDisputes;
@@ -179,6 +180,14 @@ export default async function PayrollTrackingPage() {
       >
         <div className="rounded-xl border border-dashed border-white/20 bg-white/[0.02] p-6 text-sm text-slate-200">
           No activity feed endpoint is connected yet. Expose a feed from the backend (e.g. recent claims/disputes/refunds updates) and hydrate this block.
+        </div>
+        <div className="mt-4 flex items-center gap-3 text-sm text-slate-200">
+          <a
+            className="rounded-full border border-white/30 px-4 py-2 font-semibold hover:bg-white/10"
+            href={`${apiBase}/tax/document/${new Date().getFullYear()}`}
+          >
+            Download current year tax document
+          </a>
         </div>
       </SectionCard>
     </div>

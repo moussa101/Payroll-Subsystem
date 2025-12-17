@@ -1,4 +1,5 @@
 export type ClaimRecord = {
+  id: string;
   claimId: string;
   claimType: string;
   description: string;
@@ -8,9 +9,11 @@ export type ClaimRecord = {
   status: string;
   financeOwner?: string;
   updatedOn: string;
+  statusHistory?: { status: string; at: string; note?: string }[];
 };
 
 export type DisputeRecord = {
+  id: string;
   disputeId: string;
   description: string;
   employee: string;
@@ -18,6 +21,7 @@ export type DisputeRecord = {
   status: string;
   payrollOwner?: string;
   updatedOn: string;
+  statusHistory?: { status: string; at: string; note?: string }[];
 };
 
 export type RefundRecord = {

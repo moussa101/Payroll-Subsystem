@@ -3,6 +3,8 @@ import { DisputesService } from '../services/disputes.service';
 import { CreateDisputeDto } from '../dtos/create-dispute.dto';
 import { UpdateDisputeDto } from '../dtos/update-dispute.dto';
 import { disputes } from '../models/disputes.schema';
+import { ApproveDisputeDto } from '../dtos/approve-dispute.dto';
+import { RejectDisputeDto } from '../dtos/reject-dispute.dto';
 
 @Controller('disputes')
 export class DisputesController {
@@ -34,6 +36,22 @@ export class DisputesController {
     @Body() updateDisputeDto: UpdateDisputeDto,
   ): Promise<disputes> {
     return this.disputesService.update(id, updateDisputeDto);
+  }
+
+  @Post(':id/approve')
+  approve(
+    @Param('id') id: string,
+    @Body() approveDisputeDto: ApproveDisputeDto,
+  ): Promise<disputes> {
+    return this.disputesService.approve(id, approveDisputeDto);
+  }
+
+  @Post(':id/reject')
+  reject(
+    @Param('id') id: string,
+    @Body() rejectDisputeDto: RejectDisputeDto,
+  ): Promise<disputes> {
+    return this.disputesService.reject(id, rejectDisputeDto);
   }
 
   @Delete(':id')
