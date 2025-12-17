@@ -8,6 +8,7 @@ export default function Sidebar() {
 
   const menuItems = [
     { href: '/', label: 'Dashboard', icon: '📊' },
+    { href: '/payroll-tracking', label: 'Payroll History', icon: '🧾' },
     { href: '/payroll-config/policies', label: 'Policies', icon: '📋' },
     { href: '/payroll-config/pay-grades', label: 'Pay Grades', icon: '💰' },
     { href: '/payroll-config/pay-types', label: 'Pay Types', icon: '⏰' },
@@ -47,4 +48,3 @@ export default function Sidebar() {
     </aside>
   );
 }
-
