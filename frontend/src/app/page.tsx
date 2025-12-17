@@ -16,8 +16,8 @@ export default function Home() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Payroll Configuration Dashboard</h1>
-        <p className="text-gray-600">Manage and configure all payroll settings and policies</p>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Payroll Configuration Dashboard</h1>
+        <p className="text-muted-foreground">Manage and configure all payroll settings and policies</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -25,10 +25,10 @@ export default function Home() {
           <Link
             key={section.href}
             href={section.href}
-            className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200"
+            className="block p-6 bg-card rounded-lg shadow hover:shadow-md transition-shadow border border-border"
           >
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">{section.label}</h2>
-            <p className="text-gray-600">{section.description}</p>
+            <h2 className="text-xl font-semibold text-foreground mb-2">{section.label}</h2>
+            <p className="text-muted-foreground">{section.description}</p>
           </Link>
         ))}
       </div>

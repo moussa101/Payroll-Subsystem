@@ -4,8 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { payrollPoliciesApi } from '@/lib/api';
 import { PayrollPolicy, UpdatePayrollPolicyDto, ConfigStatus, PolicyType, Applicability } from '@/types/payroll-config';
-import { Button } from '@/components/ui/Button';
-import { FormInput, FormTextarea, FormSelect } from '@/components/ui/FormInput';
+import { Button, Input, Label } from '@/components/ui/shadcn';
 
 const policyTypeOptions = [
   { value: PolicyType.ALLOWANCE, label: 'Allowance' },
@@ -134,88 +133,59 @@ function EditPolicyForm() {
             </button>
           </div>
           <form onSubmit={handleSubmit}>
-            <FormInput
-              label="Policy Name"
-              value={formData.policyName || ''}
-              onChange={(e) => setFormData({ ...formData, policyName: e.target.value })}
-              required
-              error={errors.policyName}
-            />
-            <FormSelect
-              label="Policy Type"
-              value={formData.policyType || PolicyType.ALLOWANCE}
-              onChange={(e) => setFormData({ ...formData, policyType: e.target.value as PolicyType })}
-              options={policyTypeOptions}
-              required
-            />
-            <FormTextarea
-              label="Description"
-              value={formData.description || ''}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              required
-              error={errors.description}
-              rows={3}
-            />
-            <FormInput
-              label="Effective Date"
-              type="date"
-              value={formData.effectiveDate || ''}
-              onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
-              required
-              error={errors.effectiveDate}
-            />
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <Label className="mb-1">Policy Name</Label>
+                <Input value={formData.policyName || ''} onChange={(e: any) => setFormData({ ...formData, policyName: e.target.value })} required />
+                {errors.policyName && <p className="text-sm text-red-600 mt-1">{errors.policyName}</p>}
+              </div>
+
+              <div>
+                <Label className="mb-1">Policy Type</Label>
+                <select className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary" value={formData.policyType || PolicyType.ALLOWANCE as any} onChange={(e) => setFormData({ ...formData, policyType: e.target.value as PolicyType })} required>
+                  {policyTypeOptions.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <Label className="mb-1">Description</Label>
+                <textarea className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary" value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} required />
+                {errors.description && <p className="text-sm text-red-600 mt-1">{errors.description}</p>}
+              </div>
+
+              <div>
+                <Label className="mb-1">Effective Date</Label>
+                <Input type="date" value={formData.effectiveDate || ''} onChange={(e: any) => setFormData({ ...formData, effectiveDate: e.target.value })} required />
+                {errors.effectiveDate && <p className="text-sm text-red-600 mt-1">{errors.effectiveDate}</p>}
+              </div>
+            </div>
             <div className="mb-4">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Rule Definition</h3>
               <div className="grid grid-cols-3 gap-4">
-                <FormInput
-                  label="Percentage"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={formData.ruleDefinition?.percentage || 0}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      ruleDefinition: { ...(formData.ruleDefinition || { percentage: 0, fixedAmount: 0, thresholdAmount: 1 }), percentage: parseFloat(e.target.value) || 0 },
-                    })
-                  }
-                  required
-                />
-                <FormInput
-                  label="Fixed Amount"
-                  type="number"
-                  min="0"
-                  value={formData.ruleDefinition?.fixedAmount || 0}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      ruleDefinition: { ...(formData.ruleDefinition || { percentage: 0, fixedAmount: 0, thresholdAmount: 1 }), fixedAmount: parseFloat(e.target.value) || 0 },
-                    })
-                  }
-                  required
-                />
-                <FormInput
-                  label="Threshold Amount"
-                  type="number"
-                  min="1"
-                  value={formData.ruleDefinition?.thresholdAmount || 1}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      ruleDefinition: { ...(formData.ruleDefinition || { percentage: 0, fixedAmount: 0, thresholdAmount: 1 }), thresholdAmount: parseFloat(e.target.value) || 1 },
-                    })
-                  }
-                  required
-                />
+                <div>
+                  <Label className="mb-1">Percentage</Label>
+                  <Input type="number" min={0} max={100} value={formData.ruleDefinition?.percentage || 0} onChange={(e: any) => setFormData({ ...formData, ruleDefinition: { ...(formData.ruleDefinition || { percentage: 0, fixedAmount: 0, thresholdAmount: 1 }), percentage: parseFloat(e.target.value) || 0 } })} required />
+                </div>
+                <div>
+                  <Label className="mb-1">Fixed Amount</Label>
+                  <Input type="number" min={0} value={formData.ruleDefinition?.fixedAmount || 0} onChange={(e: any) => setFormData({ ...formData, ruleDefinition: { ...(formData.ruleDefinition || { percentage: 0, fixedAmount: 0, thresholdAmount: 1 }), fixedAmount: parseFloat(e.target.value) || 0 } })} required />
+                </div>
+                <div>
+                  <Label className="mb-1">Threshold Amount</Label>
+                  <Input type="number" min={1} value={formData.ruleDefinition?.thresholdAmount || 1} onChange={(e: any) => setFormData({ ...formData, ruleDefinition: { ...(formData.ruleDefinition || { percentage: 0, fixedAmount: 0, thresholdAmount: 1 }), thresholdAmount: parseFloat(e.target.value) || 1 } })} required />
+                </div>
               </div>
             </div>
-            <FormSelect
-              label="Applicability"
-              value={formData.applicability || Applicability.AllEmployees}
-              onChange={(e) => setFormData({ ...formData, applicability: e.target.value as Applicability })}
-              options={applicabilityOptions}
-              required
-            />
+            <div>
+              <Label className="mb-1">Applicability</Label>
+              <select className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary" value={formData.applicability || Applicability.AllEmployees as any} onChange={(e) => setFormData({ ...formData, applicability: e.target.value as Applicability })} required>
+                {applicabilityOptions.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
             <div className="flex justify-end space-x-3 mt-6">
               <Button
                 type="button"
@@ -224,7 +194,7 @@ function EditPolicyForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" isLoading={loading}>
+              <Button type="submit" variant="primary" disabled={loading}>
                 Update
               </Button>
             </div>

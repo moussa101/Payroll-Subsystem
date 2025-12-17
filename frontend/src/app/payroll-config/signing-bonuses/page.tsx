@@ -4,9 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { signingBonusesApi } from '@/lib/api';
 import { SigningBonus, ConfigStatus } from '@/types/payroll-config';
-import { Table, TableRow, TableCell } from '@/components/ui/Table';
-import { Button } from '@/components/ui/Button';
-import { StatusBadge } from '@/components/ui/StatusBadge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/shadcn';
 import { formatNumber } from '@/lib/format';
 
 export default function SigningBonusesPage() {
@@ -49,50 +48,68 @@ export default function SigningBonusesPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Signing Bonuses</h1>
+        <h1 className="text-3xl font-bold text-foreground">Signing Bonuses</h1>
         <Link href="/payroll-config/signing-bonuses?create=true">
           <Button>Create Signing Bonus</Button>
         </Link>
       </div>
 
-      <Table headers={['Position Name', 'Amount', 'Status', 'Actions']}>
-        {signingBonuses.map((bonus) => (
-          <TableRow key={bonus._id}>
-            <TableCell>{bonus.positionName}</TableCell>
-            <TableCell>{formatNumber(bonus.amount)}</TableCell>
-            <TableCell>
-              <StatusBadge status={bonus.status} />
-            </TableCell>
-            <TableCell>
-              <div className="flex space-x-2">
-                <Link href={`/payroll-config/signing-bonuses?edit=${bonus._id}`}>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={bonus.status !== ConfigStatus.DRAFT}
-                  >
-                    Edit
-                  </Button>
-                </Link>
-                <Link href={`/payroll-config/signing-bonuses?status=${bonus._id}`}>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                  >
-                    Change Status
-                  </Button>
-                </Link>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => handleDelete(bonus)}
-                >
-                  Delete
-                </Button>
-              </div>
-            </TableCell>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Position Name</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
-        ))}
+        </TableHeader>
+        <TableBody>
+          {signingBonuses.map((bonus) => (
+            <TableRow key={bonus._id}>
+              <TableCell>{bonus.positionName}</TableCell>
+              <TableCell>{formatNumber(bonus.amount)}</TableCell>
+              <TableCell>
+                {(() => {
+                  const map: Record<string, { label: string; variant: any }> = {
+                    [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
+                    [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
+                    [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
+                  };
+                  const s = map[bonus.status] || { label: bonus.status, variant: 'default' };
+                  return <Badge variant={s.variant}>{s.label}</Badge>;
+                })()}
+              </TableCell>
+              <TableCell>
+                <div className="flex space-x-2">
+                  <Link href={`/payroll-config/signing-bonuses?edit=${bonus._id}`}>
+                    <Button
+                      size="sm"
+                      variant="success"
+                      disabled={bonus.status !== ConfigStatus.DRAFT}
+                    >
+                      Edit
+                    </Button>
+                  </Link>
+                  <Link href={`/payroll-config/signing-bonuses?status=${bonus._id}`}>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                    >
+                      Change Status
+                    </Button>
+                  </Link>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleDelete(bonus)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
       </Table>
     </div>
   );

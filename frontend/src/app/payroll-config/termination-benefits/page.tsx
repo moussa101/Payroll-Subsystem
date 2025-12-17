@@ -4,9 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { terminationBenefitsApi } from '@/lib/api';
 import { TerminationBenefit, ConfigStatus } from '@/types/payroll-config';
-import { Table, TableRow, TableCell } from '@/components/ui/Table';
-import { Button } from '@/components/ui/Button';
-import { StatusBadge } from '@/components/ui/StatusBadge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/shadcn';
 import { formatNumber } from '@/lib/format';
 
 export default function TerminationBenefitsPage() {
@@ -49,51 +48,70 @@ export default function TerminationBenefitsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Termination Benefits</h1>
+        <h1 className="text-3xl font-bold text-foreground">Termination Benefits</h1>
         <Link href="/payroll-config/termination-benefits?create=true">
           <Button>Create Termination Benefit</Button>
         </Link>
       </div>
 
-      <Table headers={['Name', 'Amount', 'Terms', 'Status', 'Actions']}>
-        {terminationBenefits.map((benefit) => (
-          <TableRow key={benefit._id}>
-            <TableCell>{benefit.name}</TableCell>
-            <TableCell>{formatNumber(benefit.amount)}</TableCell>
-            <TableCell>{benefit.terms || 'N/A'}</TableCell>
-            <TableCell>
-              <StatusBadge status={benefit.status} />
-            </TableCell>
-            <TableCell>
-              <div className="flex space-x-2">
-                <Link href={`/payroll-config/termination-benefits?edit=${benefit._id}`}>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={benefit.status !== ConfigStatus.DRAFT}
-                  >
-                    Edit
-                  </Button>
-                </Link>
-                <Link href={`/payroll-config/termination-benefits?status=${benefit._id}`}>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                  >
-                    Change Status
-                  </Button>
-                </Link>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => handleDelete(benefit)}
-                >
-                  Delete
-                </Button>
-              </div>
-            </TableCell>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Terms</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
-        ))}
+        </TableHeader>
+        <TableBody>
+          {terminationBenefits.map((benefit) => (
+            <TableRow key={benefit._id}>
+              <TableCell>{benefit.name}</TableCell>
+              <TableCell>{formatNumber(benefit.amount)}</TableCell>
+              <TableCell>{benefit.terms || 'N/A'}</TableCell>
+              <TableCell>
+                {(() => {
+                  const map: Record<string, { label: string; variant: any }> = {
+                    [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
+                    [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
+                    [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
+                  };
+                  const s = map[benefit.status] || { label: benefit.status, variant: 'default' };
+                  return <Badge variant={s.variant}>{s.label}</Badge>;
+                })()}
+              </TableCell>
+              <TableCell>
+                <div className="flex space-x-2">
+                  <Link href={`/payroll-config/termination-benefits?edit=${benefit._id}`}>
+                    <Button
+                      size="sm"
+                      variant="success"
+                      disabled={benefit.status !== ConfigStatus.DRAFT}
+                    >
+                      Edit
+                    </Button>
+                  </Link>
+                  <Link href={`/payroll-config/termination-benefits?status=${benefit._id}`}>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                    >
+                      Change Status
+                    </Button>
+                  </Link>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleDelete(benefit)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
       </Table>
     </div>
   );

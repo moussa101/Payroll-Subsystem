@@ -4,8 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { taxRulesApi } from '@/lib/api';
 import { TaxRule, UpdateTaxRuleDto, ConfigStatus } from '@/types/payroll-config';
-import { Button } from '@/components/ui/Button';
-import { FormInput, FormTextarea } from '@/components/ui/FormInput';
+import { Button, Input, Label } from '@/components/ui/shadcn';
 
 function EditTaxRuleForm() {
   const router = useRouter();
@@ -96,28 +95,35 @@ function EditTaxRuleForm() {
             </button>
           </div>
           <form onSubmit={handleSubmit}>
-            <FormInput
-              label="Name"
-              value={formData.name || ''}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-              error={errors.name}
-            />
-            <FormTextarea
-              label="Description"
-              value={formData.description || ''}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-            />
-            <FormInput
-              label="Rate (%)"
-              type="number"
-              min="0"
-              value={formData.rate || 0}
-              onChange={(e) => setFormData({ ...formData, rate: parseFloat(e.target.value) || 0 })}
-              required
-              error={errors.rate}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Name</Label>
+                <Input
+                  value={formData.name || ''}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Rate (%)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={String(formData.rate || 0)}
+                  onChange={(e) => setFormData({ ...formData, rate: parseFloat(e.target.value) || 0 })}
+                  required
+                />
+              </div>
+              <div className="col-span-2">
+                <Label>Description</Label>
+                <textarea
+                  value={formData.description || ''}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                  className="mt-1 block w-full rounded-md border px-3 py-2"
+                />
+              </div>
+            </div>
             <div className="flex justify-end space-x-3 mt-6">
               <Button
                 type="button"
@@ -126,7 +132,7 @@ function EditTaxRuleForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" isLoading={loading}>
+              <Button type="submit" variant="primary" disabled={loading}>
                 Update
               </Button>
             </div>

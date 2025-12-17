@@ -7,13 +7,18 @@ export const metadata: Metadata = {
 
 export default function PayrollConfigLayout({
   children,
+  sidebar,
 }: {
   children: React.ReactNode;
+  sidebar: React.ReactNode;
 }) {
   return (
-    <>
-      {children}
-    </>
+    <div className="min-h-screen bg-background text-foreground flex">
+      {sidebar}
+      <main className="flex-1">
+        {children}
+      </main>
+    </div>
   );
 }
 
