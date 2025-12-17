@@ -7,18 +7,28 @@ import { claims, claimsSchema } from './models/claims.schema';
 import { disputes, disputesSchema } from './models/disputes.schema';
 import { PayrollConfigurationModule } from '../payroll-configuration/payroll-configuration.module';
 import { PayrollExecutionModule } from '../payroll-execution/payroll-execution.module';
+import { TaxController } from './tax/tax.controller';
+import { RefundsService } from './services/refunds.service';
+import { ClaimsService } from './services/claims.service';
+import { DisputesService } from './services/disputes.service';
+import {
+  payrollRuns,
+  payrollRunsSchema,
+} from '../payroll-execution/models/payrollRuns.schema';
 
 @Module({
-  
+
   imports: [
-    PayrollConfigurationModule,forwardRef(()=> PayrollExecutionModule),
+    PayrollConfigurationModule,
+    forwardRef(() => PayrollExecutionModule),
     MongooseModule.forFeature([
       { name: refunds.name, schema: refundsSchema },
       { name: claims.name, schema: claimsSchema },
       { name: disputes.name, schema: disputesSchema },
+      { name: payrollRuns.name, schema: payrollRunsSchema },
     ])],
-  controllers: [PayrollTrackingController],
-  providers: [PayrollTrackingService],
+  controllers: [PayrollTrackingController, TaxController],
+  providers: [PayrollTrackingService, RefundsService, ClaimsService, DisputesService],
   exports:[PayrollTrackingService]
 })
 export class PayrollTrackingModule { }

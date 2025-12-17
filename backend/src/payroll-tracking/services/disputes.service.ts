@@ -4,13 +4,27 @@ import { Model } from 'mongoose';
 import { disputes, disputesDocument } from '../models/disputes.schema';
 import { CreateDisputeDto } from '../dtos/create-dispute.dto';
 import { UpdateDisputeDto } from '../dtos/update-dispute.dto';
+import { ApproveDisputeDto } from '../dtos/approve-dispute.dto';
+import { RefundsService } from './refunds.service';
+import { DisputeStatus } from '../enums/payroll-tracking-enum';
+import { RejectDisputeDto } from '../dtos/reject-dispute.dto';
 
 @Injectable()
 export class DisputesService {
   constructor(
     @InjectModel(disputes.name)
     private readonly disputeModel: Model<disputesDocument>,
+    private readonly refundsService: RefundsService,
   ) {}
+
+  private pushHistory(
+    dispute: disputesDocument,
+    status: string,
+    note?: string,
+  ) {
+    dispute.statusHistory = dispute.statusHistory || [];
+    dispute.statusHistory.push({ status, at: new Date(), note });
+  }
 
   async create(createDisputeDto: CreateDisputeDto): Promise<disputes> {
     const dispute = new this.disputeModel(createDisputeDto);
@@ -73,5 +87,40 @@ export class DisputesService {
     if (!deleted) {
       throw new NotFoundException(`Dispute with id "${id}" not found`);
     }
+  }
+
+  async approve(id: string, dto: ApproveDisputeDto): Promise<disputes> {
+    const dispute = await this.disputeModel.findById(id).exec();
+    if (!dispute) {
+      throw new NotFoundException(`Dispute with id "${id}" not found`);
+    }
+
+    dispute.status = DisputeStatus.APPROVED;
+    if (dto.resolutionComment) {
+      dispute.resolutionComment = dto.resolutionComment;
+    }
+
+    this.pushHistory(dispute, DisputeStatus.APPROVED, dto.resolutionComment);
+
+    await dispute.save();
+
+    await this.refundsService.createFromDispute(dispute, dto.refundAmount);
+
+    return dispute;
+  }
+
+  async reject(id: string, dto: RejectDisputeDto): Promise<disputes> {
+    const dispute = await this.disputeModel.findById(id).exec();
+    if (!dispute) {
+      throw new NotFoundException(`Dispute with id "${id}" not found`);
+    }
+
+    dispute.status = DisputeStatus.REJECTED;
+    if (dto.rejectionReason) {
+      dispute.rejectionReason = dto.rejectionReason;
+    }
+    this.pushHistory(dispute, DisputeStatus.REJECTED, dto.rejectionReason);
+    await dispute.save();
+    return dispute;
   }
 }
