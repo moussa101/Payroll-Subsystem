@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
@@ -27,12 +28,22 @@ export default function InitiationPage() {
 
     const handleGenerateDraft = async () => {
         setIsGenerating(true);
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+
+            await axios.post(`${baseUrl}/payroll-execution/initiate`, { period }, { headers });
+
+            // Navigate to review page (assuming backend returns ID or we redirect to current)
+            // For now redirecting to review/current as per common pattern or specific ID if available
+            router.push('/payroll-execution/review/current');
+        } catch (error) {
+            console.error('Failed to initiate payroll:', error);
+            alert('Failed to initiate payroll run. Please try again.');
+        } finally {
             setIsGenerating(false);
-            // Navigate to review page with a mock cycle ID
-            router.push('/payroll-execution/review/cycle-123');
-        }, 1500);
+        }
     };
 
     return (

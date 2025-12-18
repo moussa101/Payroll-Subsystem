@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import axios from 'axios';
 import { notFound } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { PayrollTable, EmployeePayroll } from '@/components/payroll/PayrollTable';
@@ -16,9 +17,31 @@ const MOCK_EMPLOYEES: EmployeePayroll[] = [
 
 export default function ReviewPage({ params }: { params: { cycleId: string } }) {
 
-    const [employees, setEmployees] = useState<EmployeePayroll[]>(MOCK_EMPLOYEES);
+    const [employees, setEmployees] = useState<EmployeePayroll[]>([]);
     const [selectedEmployee, setSelectedEmployee] = useState<CorrectionData | null>(null);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    const fetchEmployees = async () => {
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+
+            const response = await axios.get(`${baseUrl}/payroll-execution/drafts/${params.cycleId}`, { headers });
+            setEmployees(response.data);
+        } catch (error) {
+            console.error('Failed to fetch draft entries:', error);
+            // Fallback to mock data if API fails for demo purposes, or handle error appropriately
+            setEmployees(MOCK_EMPLOYEES);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchEmployees();
+    }, [params.cycleId]);
 
     const handleCorrect = (employee: EmployeePayroll) => {
         setSelectedEmployee({
@@ -32,22 +55,43 @@ export default function ReviewPage({ params }: { params: { cycleId: string } }) 
         setIsSheetOpen(true);
     };
 
-    const handleSaveCorrection = (data: CorrectionData) => {
-        setEmployees(employees.map(emp =>
-            emp.id === data.employeeId
-                ? {
-                    ...emp,
-                    grossPay: data.grossPay,
-                    taxes: data.taxes,
-                    deductions: data.deductions,
-                    netPay: data.netPay,
-                    status: 'Corrected',
-                    hasByAnomaly: false
-                }
-                : emp
-        ));
-        setIsSheetOpen(false);
-        setSelectedEmployee(null);
+    const handleSaveCorrection = async (data: CorrectionData) => {
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+
+            await axios.patch(`${baseUrl}/payroll-execution/payslip/${data.employeeId}`, data, { headers });
+
+            // Refresh list after correction
+            await fetchEmployees();
+
+            setIsSheetOpen(false);
+            setSelectedEmployee(null);
+        } catch (error) {
+            console.error('Failed to save correction:', error);
+            alert('Failed to save correction. Please try again.');
+        }
+    };
+
+    const handlePublish = async () => {
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+
+            await axios.post(`${baseUrl}/payroll-execution/review`, {
+                runId: params.cycleId,
+                action: 'approve', // Assuming 'approve' is the action for publishing to manager
+                comments: 'Published for manager review'
+            }, { headers });
+
+            alert("Published for Manager Review!");
+            // Redirect or update UI state
+        } catch (error) {
+            console.error('Failed to publish review:', error);
+            alert('Failed to publish review. Please try again.');
+        }
     };
 
     const hasErrors = employees.some(e => e.hasByAnomaly);
@@ -63,7 +107,7 @@ export default function ReviewPage({ params }: { params: { cycleId: string } }) 
                     <p className="text-sm text-gray-500 dark:text-gray-400">Cycle ID: {Math.floor(Math.random() * 1000)} {/* Just a placeholder for cycleId param */}</p>
                 </div>
                 <div>
-                    <Button variant="primary" disabled={hasErrors} onClick={() => alert("Published for Manager Review!")}>
+                    <Button variant="primary" disabled={hasErrors} onClick={handlePublish}>
                         Publish for Manager Review
                     </Button>
                 </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import axios from 'axios';
 import Link from 'next/link';
 import { StatusCard } from '@/components/payroll/StatusCard';
 import { Button } from '@/components/ui/Button';
@@ -22,6 +23,20 @@ const MOCK_DATA: {
 
 export default function PayrollExecutionPage() {
     const { status } = MOCK_DATA;
+
+    const handleExecutePayment = async () => {
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+
+            await axios.post(`${baseUrl}/payroll-execution/execute-payment`, {}, { headers });
+            alert('Payment execution initiated successfully!');
+        } catch (error) {
+            console.error('Failed to execute payment:', error);
+            alert('Failed to execute payment. Please try again.');
+        }
+    };
 
     const getActionLink = () => {
         switch (status) {
