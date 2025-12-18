@@ -1,24 +1,25 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, ChangeEvent, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { allowancesApi } from '@/lib/api';
-import { Allowance, UpdateAllowanceDto, ConfigStatus } from '@/types/payroll-config';
-import { Button } from '@/components/ui/Button';
-import { FormInput } from '@/components/ui/FormInput';
+import { allowancesApi } from '@/app/payroll-config/client';
+import { UpdateAllowanceDto, ConfigStatus } from '@/types/payroll-config';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 function EditAllowanceForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get('edit');
-  const [allowance, setAllowance] = useState<Allowance | null>(null);
   const [formData, setFormData] = useState<UpdateAllowanceDto>({
     name: '',
     amount: 0,
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadAllowance = async () => {
@@ -28,7 +29,6 @@ function EditAllowanceForm() {
       }
       try {
         const data = await allowancesApi.getById(id);
-        setAllowance(data);
         setFormData({
           name: data.name,
           amount: data.amount,
@@ -39,7 +39,8 @@ function EditAllowanceForm() {
         }
       } catch (error) {
         console.error('Error loading allowance:', error);
-        alert('Failed to load allowance');
+        const message = error instanceof Error ? error.message : 'Failed to load allowance';
+        alert(message);
         router.push('/payroll-config/allowances');
       } finally {
         setFetching(false);
@@ -50,18 +51,24 @@ function EditAllowanceForm() {
 
   if (!id) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleChange = (field: keyof UpdateAllowanceDto) => (e: ChangeEvent<HTMLInputElement>) => {
+    const value = field === 'amount' ? parseFloat(e.target.value) || 0 : e.target.value;
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setErrors({});
     setLoading(true);
+    setError(null);
 
     try {
       await allowancesApi.update(id, formData);
       router.push('/payroll-config/allowances');
       router.refresh();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating allowance:', error);
-      alert(error.message || 'Failed to update allowance');
+      const message = error instanceof Error ? error.message : 'Failed to update allowance';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -77,55 +84,50 @@ function EditAllowanceForm() {
     );
   }
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) router.push('/payroll-config/allowances');
+  };
+
+  const show = Boolean(id);
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-[100]">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto relative z-[101]">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Edit Allowance</h2>
-            <button
-              onClick={() => router.push('/payroll-config/allowances')}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              type="button"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+  <Dialog open={show} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit allowance</DialogTitle>
+          <DialogDescription>Update the name or amount for this allowance.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
+            <Input id="name" value={formData.name} onChange={handleChange('name')} required />
           </div>
-          <form onSubmit={handleSubmit}>
-            <FormInput
-              label="Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-              error={errors.name}
-            />
-            <FormInput
-              label="Amount"
+          <div className="space-y-2">
+            <Label htmlFor="amount">Amount</Label>
+            <Input
+              id="amount"
               type="number"
-              min="0"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+              min={0}
+              value={String(formData.amount)}
+              onChange={handleChange('amount')}
               required
-              error={errors.amount}
             />
-            <div className="flex justify-end space-x-3 mt-6">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => router.push('/payroll-config/allowances')}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" isLoading={loading}>
-                Update
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+          </div>
+          {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+          <DialogFooter className="justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push('/payroll-config/allowances')}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              Update
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

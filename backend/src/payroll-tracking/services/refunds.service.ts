@@ -17,8 +17,10 @@ export class RefundsService {
   constructor(
     @InjectModel(refunds.name)
     private readonly refundModel: Model<refundsDocument>,
+
     @InjectModel(payrollRuns.name)
     private readonly payrollRunModel: Model<payrollRunsDocument>,
+
   ) {}
 
   async create(createRefundDto: CreateRefundDto): Promise<refunds> {

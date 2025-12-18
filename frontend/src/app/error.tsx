@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/shadcn';
 
 export default function GlobalError({
   error,
@@ -35,14 +35,14 @@ export default function GlobalError({
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-foreground mb-2">
               Something went wrong!
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">
               {error.message || 'An unexpected error occurred.'}
             </p>
             <div className="flex justify-center space-x-4">
-              <Button onClick={reset} variant="primary">
+              <Button onClick={reset} variant="default">
                 Try again
               </Button>
               <Button

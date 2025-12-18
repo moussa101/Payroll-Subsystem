@@ -3,20 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata: Metadata = {
-  title: "Payroll Configuration System",
-  description: "Payroll configuration and management system",
-};
+import type { ReactNode } from 'react'
 
 export default function RootLayout({
   children,
@@ -76,5 +63,5 @@ export default function RootLayout({
         </div>
       </body>
     </html>
-  );
+  )
 }

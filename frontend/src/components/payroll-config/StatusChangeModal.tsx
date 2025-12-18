@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/shadcn';
 import { Modal } from '@/components/ui/Modal';
-import { Button } from '@/components/ui/Button';
-import { FormTextarea, FormSelect } from '@/components/ui/FormInput';
+import { FormSelect, FormTextarea } from '@/components/ui/FormInput';
 import { ConfigStatus } from '@/types/payroll-config';
 
 interface StatusChangeModalProps {

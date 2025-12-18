@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { payGradesApi } from '@/lib/api';
+import { payGradesApi } from '@/app/payroll-config/client';
 import { PayGrade, UpdatePayGradeDto, ConfigStatus } from '@/types/payroll-config';
-import { Button } from '@/components/ui/Button';
-import { FormInput } from '@/components/ui/FormInput';
+import { Button, Input, Label } from '@/components/ui/shadcn';
 
 function EditPayGradeForm() {
   const router = useRouter();
@@ -105,31 +104,36 @@ function EditPayGradeForm() {
             </button>
           </div>
           <form onSubmit={handleSubmit}>
-            <FormInput
-              label="Grade"
-              value={formData.grade || ''}
-              onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-              required
-              error={errors.grade}
-            />
-            <FormInput
-              label="Base Salary"
-              type="number"
-              min="6000"
-              value={formData.baseSalary || 0}
-              onChange={(e) => setFormData({ ...formData, baseSalary: parseFloat(e.target.value) || 0 })}
-              required
-              error={errors.baseSalary}
-            />
-            <FormInput
-              label="Gross Salary"
-              type="number"
-              min="6000"
-              value={formData.grossSalary || 0}
-              onChange={(e) => setFormData({ ...formData, grossSalary: parseFloat(e.target.value) || 0 })}
-              required
-              error={errors.grossSalary}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Grade</Label>
+                <Input
+                  value={formData.grade || ''}
+                  onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Base Salary</Label>
+                <Input
+                  type="number"
+                  min={6000}
+                  value={String(formData.baseSalary || 0)}
+                  onChange={(e) => setFormData({ ...formData, baseSalary: parseFloat(e.target.value) || 0 })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Gross Salary</Label>
+                <Input
+                  type="number"
+                  min={6000}
+                  value={String(formData.grossSalary || 0)}
+                  onChange={(e) => setFormData({ ...formData, grossSalary: parseFloat(e.target.value) || 0 })}
+                  required
+                />
+              </div>
+            </div>
             <div className="flex justify-end space-x-3 mt-6">
               <Button
                 type="button"
@@ -138,7 +142,7 @@ function EditPayGradeForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" isLoading={loading}>
+              <Button type="submit" variant="primary" disabled={loading}>
                 Update
               </Button>
             </div>

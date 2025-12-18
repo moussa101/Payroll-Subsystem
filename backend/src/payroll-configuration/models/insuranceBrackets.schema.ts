@@ -8,7 +8,7 @@ export type insuranceBracketsDocument = HydratedDocument<insuranceBrackets>
 
 @Schema({ timestamps: true })
 export class insuranceBrackets {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   name: string; // insurance name like: social, health insurance
   // @Prop({ required: true, min: 0 })
   // amount: number;

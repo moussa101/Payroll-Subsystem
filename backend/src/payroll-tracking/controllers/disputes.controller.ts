@@ -54,6 +54,7 @@ export class DisputesController {
     return this.disputesService.reject(id, rejectDisputeDto);
   }
 
+
   @Delete(':id')
   remove(@Param('id') id: string): Promise<void> {
     return this.disputesService.remove(id);

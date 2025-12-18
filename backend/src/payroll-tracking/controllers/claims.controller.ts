@@ -12,8 +12,6 @@ import { ClaimsService } from '../services/claims.service';
 import { CreateClaimDto } from '../dtos/create-claim.dto';
 import { UpdateClaimDto } from '../dtos/update-claim.dto';
 import { claims } from '../models/claims.schema';
-import { ApproveClaimDto } from '../dtos/approve-claim.dto';
-import { RejectClaimDto } from '../dtos/reject-claim.dto';
 
 @Controller('claims')
 export class ClaimsController {
@@ -48,7 +46,6 @@ export class ClaimsController {
   ): Promise<claims> {
     return this.claimsService.update(id, updateClaimDto);
   }
-
   @Post(':id/approve')
   approve(
     @Param('id') id: string,
@@ -56,7 +53,6 @@ export class ClaimsController {
   ): Promise<claims> {
     return this.claimsService.approve(id, approveClaimDto);
   }
-
   @Post(':id/reject')
   reject(
     @Param('id') id: string,
@@ -64,9 +60,9 @@ export class ClaimsController {
   ): Promise<claims> {
     return this.claimsService.reject(id, rejectClaimDto);
   }
-
   @Delete(':id')
   remove(@Param('id') id: string): Promise<void> {
     return this.claimsService.remove(id);
   }
 }
+

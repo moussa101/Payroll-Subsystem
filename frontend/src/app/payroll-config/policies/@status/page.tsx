@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { payrollPoliciesApi } from '@/lib/api';
+import { payrollPoliciesApi } from '@/app/payroll-config/client';
 import { PayrollPolicy, ConfigStatus } from '@/types/payroll-config';
-import { Button } from '@/components/ui/Button';
-import { FormSelect, FormTextarea } from '@/components/ui/FormInput';
+import { Button, Label } from '@/components/ui/shadcn';
 
 function ChangeStatusForm() {
   const router = useRouter();
@@ -95,24 +94,29 @@ function ChangeStatusForm() {
                 Current Status: <span className="font-semibold">{policy?.status}</span>
               </p>
             </div>
-            <FormSelect
-              label="New Status"
-              value={statusData.status}
-              onChange={(e) => setStatusData({ ...statusData, status: e.target.value as ConfigStatus })}
-              options={[
-                { value: ConfigStatus.APPROVED, label: 'Approve' },
-                { value: ConfigStatus.REJECTED, label: 'Reject' },
-              ]}
-              required
-            />
-            {statusData.status === ConfigStatus.REJECTED && (
-              <FormTextarea
-                label="Rejection Reason"
-                value={statusData.rejectionReason || ''}
-                onChange={(e) => setStatusData({ ...statusData, rejectionReason: e.target.value })}
-                rows={3}
+            <div>
+              <Label className="mb-1">New Status</Label>
+              <select
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                value={statusData.status as any}
+                onChange={(e) => setStatusData({ ...statusData, status: e.target.value as ConfigStatus })}
                 required
-              />
+              >
+                <option value={ConfigStatus.APPROVED}>Approve</option>
+                <option value={ConfigStatus.REJECTED}>Reject</option>
+              </select>
+            </div>
+            {statusData.status === ConfigStatus.REJECTED && (
+              <div>
+                <Label className="mb-1">Rejection Reason</Label>
+                <textarea
+                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={statusData.rejectionReason || ''}
+                  onChange={(e) => setStatusData({ ...statusData, rejectionReason: e.target.value })}
+                  rows={3}
+                  required
+                />
+              </div>
             )}
             <div className="flex justify-end space-x-3 mt-6">
               <Button
@@ -122,7 +126,7 @@ function ChangeStatusForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" isLoading={loading}>
+              <Button type="submit" variant="primary" disabled={loading}>
                 Confirm
               </Button>
             </div>

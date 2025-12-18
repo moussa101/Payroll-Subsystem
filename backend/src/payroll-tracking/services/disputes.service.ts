@@ -26,6 +26,7 @@ export class DisputesService {
     dispute.statusHistory.push({ status, at: new Date(), note });
   }
 
+
   async create(createDisputeDto: CreateDisputeDto): Promise<disputes> {
     const dispute = new this.disputeModel(createDisputeDto);
     return dispute.save();
@@ -88,6 +89,7 @@ export class DisputesService {
       throw new NotFoundException(`Dispute with id "${id}" not found`);
     }
   }
+
 
   async approve(id: string, dto: ApproveDisputeDto): Promise<disputes> {
     const dispute = await this.disputeModel.findById(id).exec();

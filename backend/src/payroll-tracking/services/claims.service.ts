@@ -14,6 +14,7 @@ export class ClaimsService {
   constructor(
     @InjectModel(claims.name)
     private readonly claimModel: Model<claimsDocument>,
+
     private readonly refundsService: RefundsService,
   ) {}
 
@@ -25,7 +26,6 @@ export class ClaimsService {
     claim.statusHistory = claim.statusHistory || [];
     claim.statusHistory.push({ status, at: new Date(), note });
   }
-
   async create(createClaimDto: CreateClaimDto): Promise<claims> {
     const created = new this.claimModel({
       ...createClaimDto,
@@ -87,6 +87,7 @@ export class ClaimsService {
     return updated;
   }
 
+
   async approve(id: string, dto: ApproveClaimDto): Promise<claims> {
     const claim = await this.claimModel.findById(id).exec();
     if (!claim) {
@@ -123,7 +124,6 @@ export class ClaimsService {
     await claim.save();
     return claim;
   }
-
   async remove(id: string): Promise<void> {
     const result = await this.claimModel.findByIdAndDelete(id).exec();
 
@@ -132,3 +132,4 @@ export class ClaimsService {
     }
   }
 }
+
