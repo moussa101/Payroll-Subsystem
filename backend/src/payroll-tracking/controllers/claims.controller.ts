@@ -11,6 +11,8 @@ import {
 import { ClaimsService } from '../services/claims.service';
 import { CreateClaimDto } from '../dtos/create-claim.dto';
 import { UpdateClaimDto } from '../dtos/update-claim.dto';
+import { ApproveClaimDto } from '../dtos/approve-claim.dto';
+import { RejectClaimDto } from '../dtos/reject-claim.dto';
 import { claims } from '../models/claims.schema';
 
 @Controller('claims')
