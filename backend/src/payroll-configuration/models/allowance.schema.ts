@@ -10,7 +10,7 @@ export type allowanceDocument = HydratedDocument<allowance>
 
 @Schema({ timestamps: true })
 export class allowance {
-    @Prop({ required: true })
+    @Prop({ required: true, unique: true })
     name: string; // allowance name like:  Housing Allowance, Transport Allowance
     @Prop({ required: true, min: 0 })
     amount: number;

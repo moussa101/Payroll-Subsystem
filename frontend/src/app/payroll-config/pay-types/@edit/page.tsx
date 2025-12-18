@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { payTypesApi } from '@/lib/api';
+import { payTypesApi } from '@/app/payroll-config/client';
 import { PayType, UpdatePayTypeDto, ConfigStatus } from '@/types/payroll-config';
-import { Button } from '@/components/ui/Button';
-import { FormInput } from '@/components/ui/FormInput';
+import { Button, Input, Label } from '@/components/ui/shadcn';
 
 function EditPayTypeForm() {
   const router = useRouter();
@@ -94,22 +93,26 @@ function EditPayTypeForm() {
             </button>
           </div>
           <form onSubmit={handleSubmit}>
-            <FormInput
-              label="Type"
-              value={formData.type || ''}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              required
-              error={errors.type}
-            />
-            <FormInput
-              label="Amount"
-              type="number"
-              min="6000"
-              value={formData.amount || 0}
-              onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-              required
-              error={errors.amount}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Type</Label>
+                <Input
+                  value={formData.type || ''}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Amount</Label>
+                <Input
+                  type="number"
+                  min={6000}
+                  value={String(formData.amount || 0)}
+                  onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                  required
+                />
+              </div>
+            </div>
             <div className="flex justify-end space-x-3 mt-6">
               <Button
                 type="button"
@@ -118,7 +121,7 @@ function EditPayTypeForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" isLoading={loading}>
+              <Button type="submit" variant="primary" disabled={loading}>
                 Update
               </Button>
             </div>

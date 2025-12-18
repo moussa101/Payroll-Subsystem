@@ -2,12 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { allowancesApi } from '@/lib/api';
+import { allowancesApi } from '@/app/payroll-config/client';
 import { Allowance, ConfigStatus } from '@/types/payroll-config';
-import { Table, TableRow, TableCell } from '@/components/ui/Table';
-import { Button } from '@/components/ui/Button';
-import { StatusBadge } from '@/components/ui/StatusBadge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatNumber } from '@/lib/format';
+
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 export default function AllowancesPage() {
   const [allowances, setAllowances] = useState<Allowance[]>([]);
@@ -36,9 +39,10 @@ export default function AllowancesPage() {
     try {
       await allowancesApi.delete(allowance._id);
       loadAllowances();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting allowance:', error);
-      alert(error.message || 'Failed to delete allowance');
+      const message = error instanceof Error ? error.message : 'Failed to delete allowance';
+      alert(message);
     }
   };
 
@@ -47,53 +51,83 @@ export default function AllowancesPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Allowances</h1>
-        <Link href="/payroll-config/allowances?create=true">
-          <Button>Create Allowance</Button>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-slate-50 py-8">
+      <div className="max-w-6xl mx-auto px-4 space-y-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold text-foreground">Allowances</h1>
+            <p className="text-muted-foreground text-sm">
+              Manage recurring allowance configurations with approvals and status tracking.
+            </p>
+          </div>
+          <Link href="/payroll-config/allowances?create=true">
+            <Button>Create allowance</Button>
+          </Link>
+        </div>
 
-      <Table headers={['Name', 'Amount', 'Status', 'Actions']}>
-        {allowances.map((allowance) => (
-          <TableRow key={allowance._id}>
-            <TableCell>{allowance.name}</TableCell>
-            <TableCell>{formatNumber(allowance.amount)}</TableCell>
-            <TableCell>
-              <StatusBadge status={allowance.status} />
-            </TableCell>
-            <TableCell>
-              <div className="flex space-x-2">
-                <Link href={`/payroll-config/allowances?edit=${allowance._id}`}>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={allowance.status !== ConfigStatus.DRAFT}
-                  >
-                    Edit
-                  </Button>
-                </Link>
-                <Link href={`/payroll-config/allowances?status=${allowance._id}`}>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                  >
-                    Change Status
-                  </Button>
-                </Link>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => handleDelete(allowance)}
-                >
-                  Delete
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </Table>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Allowance list</CardTitle>
+            <CardDescription>All allowances with amounts, status, and quick actions.</CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {allowances.map((allowance) => (
+                  <TableRow key={allowance._id}>
+                    <TableCell className="font-medium">{allowance.name}</TableCell>
+                    <TableCell>{formatNumber(allowance.amount)}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const map: Record<string, { label: string; variant: BadgeVariant }> = {
+                          [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
+                          [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
+                          [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
+                        };
+                        const s = map[allowance.status] || { label: allowance.status, variant: 'default' };
+                        return <Badge variant={s.variant}>{s.label}</Badge>;
+                      })()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-2">
+                        <Link href={`/payroll-config/allowances?edit=${allowance._id}`}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={allowance.status !== ConfigStatus.DRAFT}
+                          >
+                            Edit
+                          </Button>
+                        </Link>
+                        <Link href={`/payroll-config/allowances?status=${allowance._id}`}>
+                          <Button size="sm" variant="secondary">
+                            Change status
+                          </Button>
+                        </Link>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(allowance)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

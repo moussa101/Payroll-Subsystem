@@ -2,10 +2,9 @@
 
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { insuranceApi } from '@/lib/api';
+import { insuranceApi } from '@/app/payroll-config/client';
 import { CreateInsuranceDto } from '@/types/payroll-config';
-import { Button } from '@/components/ui/Button';
-import { FormInput } from '@/components/ui/FormInput';
+import { Button, Input, Label } from '@/components/ui/shadcn';
 
 function CreateInsuranceForm() {
   const router = useRouter();
@@ -72,51 +71,58 @@ function CreateInsuranceForm() {
             </button>
           </div>
           <form onSubmit={handleSubmit}>
-            <FormInput
-              label="Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-              error={errors.name}
-            />
-            <FormInput
-              label="Min Salary"
-              type="number"
-              min="0"
-              value={formData.minSalary}
-              onChange={(e) => setFormData({ ...formData, minSalary: parseFloat(e.target.value) || 0 })}
-              required
-              error={errors.minSalary}
-            />
-            <FormInput
-              label="Max Salary"
-              type="number"
-              min="0"
-              value={formData.maxSalary}
-              onChange={(e) => setFormData({ ...formData, maxSalary: parseFloat(e.target.value) || 0 })}
-              required
-              error={errors.maxSalary}
-            />
-            <FormInput
-              label="Employee Rate (%)"
-              type="number"
-              min="0"
-              max="100"
-              value={formData.employeeRate}
-              onChange={(e) => setFormData({ ...formData, employeeRate: parseFloat(e.target.value) || 0 })}
-              required
-              error={errors.employeeRate}
-            />
-            <FormInput
-              label="Employer Rate (%)"
-              type="number"
-              min="0"
-              max="100"
-              value={formData.employerRate}
-              onChange={(e) => setFormData({ ...formData, employerRate: parseFloat(e.target.value) || 0 })}
-              required
-              error={errors.employerRate}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Name</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Min Salary</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={String(formData.minSalary)}
+                  onChange={(e) => setFormData({ ...formData, minSalary: parseFloat(e.target.value) || 0 })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Max Salary</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={String(formData.maxSalary)}
+                  onChange={(e) => setFormData({ ...formData, maxSalary: parseFloat(e.target.value) || 0 })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Employee Rate (%)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={String(formData.employeeRate)}
+                  onChange={(e) => setFormData({ ...formData, employeeRate: parseFloat(e.target.value) || 0 })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Employer Rate (%)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={String(formData.employerRate)}
+                  onChange={(e) => setFormData({ ...formData, employerRate: parseFloat(e.target.value) || 0 })}
+                  required
+                />
+              </div>
+            </div>
             <div className="flex justify-end space-x-3 mt-6">
               <Button
                 type="button"
@@ -125,7 +131,7 @@ function CreateInsuranceForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" isLoading={loading}>
+              <Button type="submit" variant="primary" disabled={loading}>
                 Create
               </Button>
             </div>

@@ -2,12 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { payGradesApi } from '@/lib/api';
+import { payGradesApi } from '@/app/payroll-config/client';
 import { PayGrade, ConfigStatus } from '@/types/payroll-config';
-import { Table, TableRow, TableCell } from '@/components/ui/Table';
-import { Button } from '@/components/ui/Button';
-import { StatusBadge } from '@/components/ui/StatusBadge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatNumber } from '@/lib/format';
+
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 export default function PayGradesPage() {
   const [payGrades, setPayGrades] = useState<PayGrade[]>([]);
@@ -36,9 +39,10 @@ export default function PayGradesPage() {
     try {
       await payGradesApi.delete(payGrade._id);
       loadPayGrades();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting pay grade:', error);
-      alert(error.message || 'Failed to delete pay grade');
+      const message = error instanceof Error ? error.message : 'Failed to delete pay grade';
+      alert(message);
     }
   };
 
@@ -47,56 +51,89 @@ export default function PayGradesPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Pay Grades</h1>
-        <Link href="/payroll-config/pay-grades?create=true">
-          <Button>Create Pay Grade</Button>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-slate-50 py-8">
+      <div className="max-w-6xl mx-auto px-4 space-y-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold text-foreground">Pay Grades</h1>
+            <p className="text-muted-foreground text-sm">
+              Manage base and gross salary structures across departments and positions.
+            </p>
+          </div>
+          <Link href="/payroll-config/pay-grades?create=true">
+            <Button>Create pay grade</Button>
+          </Link>
+        </div>
 
-      <Table headers={['Grade', 'Base Salary', 'Gross Salary', 'Department ID', 'Position ID', 'Status', 'Actions']}>
-        {payGrades.map((payGrade) => (
-          <TableRow key={payGrade._id}>
-            <TableCell>{payGrade.grade}</TableCell>
-            <TableCell>{formatNumber(payGrade.baseSalary)}</TableCell>
-            <TableCell>{formatNumber(payGrade.grossSalary)}</TableCell>
-            <TableCell>{payGrade.departmentId || 'N/A'}</TableCell>
-            <TableCell>{payGrade.positionId || 'N/A'}</TableCell>
-            <TableCell>
-              <StatusBadge status={payGrade.status} />
-            </TableCell>
-            <TableCell>
-              <div className="flex space-x-2">
-                <Link href={`/payroll-config/pay-grades?edit=${payGrade._id}`}>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={payGrade.status !== ConfigStatus.DRAFT}
-                  >
-                    Edit
-                  </Button>
-                </Link>
-                <Link href={`/payroll-config/pay-grades?status=${payGrade._id}`}>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                  >
-                    Change Status
-                  </Button>
-                </Link>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => handleDelete(payGrade)}
-                >
-                  Delete
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </Table>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Pay grade list</CardTitle>
+            <CardDescription>All grades with salary figures, status, and quick actions.</CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Grade</TableHead>
+                  <TableHead>Base Salary</TableHead>
+                  <TableHead>Gross Salary</TableHead>
+                  <TableHead>Department ID</TableHead>
+                  <TableHead>Position ID</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payGrades.map((payGrade) => (
+                  <TableRow key={payGrade._id}>
+                    <TableCell className="font-medium">{payGrade.grade}</TableCell>
+                    <TableCell>{formatNumber(payGrade.baseSalary)}</TableCell>
+                    <TableCell>{formatNumber(payGrade.grossSalary)}</TableCell>
+                    <TableCell>{payGrade.departmentId || 'N/A'}</TableCell>
+                    <TableCell>{payGrade.positionId || 'N/A'}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const map: Record<string, { label: string; variant: BadgeVariant }> = {
+                          [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
+                          [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
+                          [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
+                        };
+                        const s = map[payGrade.status] || { label: payGrade.status, variant: 'default' };
+                        return <Badge variant={s.variant}>{s.label}</Badge>;
+                      })()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-2">
+                        <Link href={`/payroll-config/pay-grades?edit=${payGrade._id}`}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={payGrade.status !== ConfigStatus.DRAFT}
+                          >
+                            Edit
+                          </Button>
+                        </Link>
+                        <Link href={`/payroll-config/pay-grades?status=${payGrade._id}`}>
+                          <Button size="sm" variant="secondary">
+                            Change status
+                          </Button>
+                        </Link>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(payGrade)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

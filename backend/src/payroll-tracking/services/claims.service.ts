@@ -1,17 +1,31 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { claims, claimsDocument } from '../models/claims.schema';   
+import { claims, claimsDocument } from '../models/claims.schema';
 import { CreateClaimDto } from '../dtos/create-claim.dto';
 import { UpdateClaimDto } from '../dtos/update-claim.dto';
+import { ApproveClaimDto } from '../dtos/approve-claim.dto';
+import { ClaimStatus } from '../enums/payroll-tracking-enum';
+import { RefundsService } from './refunds.service';
+import { RejectClaimDto } from '../dtos/reject-claim.dto';
 
 @Injectable()
 export class ClaimsService {
   constructor(
     @InjectModel(claims.name)
     private readonly claimModel: Model<claimsDocument>,
+
+    private readonly refundsService: RefundsService,
   ) {}
 
+  private pushHistory(
+    claim: claimsDocument,
+    status: string,
+    note?: string,
+  ) {
+    claim.statusHistory = claim.statusHistory || [];
+    claim.statusHistory.push({ status, at: new Date(), note });
+  }
   async create(createClaimDto: CreateClaimDto): Promise<claims> {
     const created = new this.claimModel({
       ...createClaimDto,
@@ -73,6 +87,43 @@ export class ClaimsService {
     return updated;
   }
 
+
+  async approve(id: string, dto: ApproveClaimDto): Promise<claims> {
+    const claim = await this.claimModel.findById(id).exec();
+    if (!claim) {
+      throw new NotFoundException(`Claim with id "${id}" not found`);
+    }
+
+    claim.status = ClaimStatus.APPROVED;
+    if (dto.approvedAmount !== undefined) {
+      claim.approvedAmount = dto.approvedAmount;
+    }
+    if (dto.resolutionComment) {
+      claim.resolutionComment = dto.resolutionComment;
+    }
+
+    this.pushHistory(claim, ClaimStatus.APPROVED, dto.resolutionComment);
+
+    await claim.save();
+
+    await this.refundsService.createFromClaim(claim);
+
+    return claim;
+  }
+
+  async reject(id: string, dto: RejectClaimDto): Promise<claims> {
+    const claim = await this.claimModel.findById(id).exec();
+    if (!claim) {
+      throw new NotFoundException(`Claim with id "${id}" not found`);
+    }
+    claim.status = ClaimStatus.REJECTED;
+    if (dto.rejectionReason) {
+      claim.rejectionReason = dto.rejectionReason;
+    }
+    this.pushHistory(claim, ClaimStatus.REJECTED, dto.rejectionReason);
+    await claim.save();
+    return claim;
+  }
   async remove(id: string): Promise<void> {
     const result = await this.claimModel.findByIdAndDelete(id).exec();
 
@@ -81,3 +132,4 @@ export class ClaimsService {
     }
   }
 }
+

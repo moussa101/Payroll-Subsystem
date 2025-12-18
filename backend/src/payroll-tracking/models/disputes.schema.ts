@@ -39,6 +39,18 @@ export class disputes {
 
   @Prop()
   resolutionComment?: string;
+
+  @Prop({
+    type: [
+      {
+        status: { type: String },
+        at: { type: Date, default: Date.now },
+        note: { type: String },
+      },
+    ],
+    default: [],
+  })
+  statusHistory: { status: string; at: Date; note?: string }[];
 }
 
 export const disputesSchema = SchemaFactory.createForClass(disputes);
