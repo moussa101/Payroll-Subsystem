@@ -1,28 +1,19 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import { Toaster } from '@/components/ui/sonner'
+import './globals.css'
 
-export const metadata: Metadata = {
-  title: "Payroll Configuration System",
-  description: "Payroll configuration and management system",
-};
+import type { ReactNode } from 'react'
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: ReactNode
+}) {
   return (
-    <html lang="en">
-      <body
-        className="antialiased"
-        suppressHydrationWarning
-      >
-        <div className="min-h-screen bg-background text-foreground">
-          <main className="flex-1">
-            {children}
-          </main>
-        </div>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`font-sans`}>
+        {children}
+        <Toaster closeButton position="top-right" />
       </body>
     </html>
-  );
+  )
 }

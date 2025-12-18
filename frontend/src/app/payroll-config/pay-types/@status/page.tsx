@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { payTypesApi } from '@/lib/api';
+import { payTypesApi } from '@/app/payroll-config/client';
 import { PayType, ConfigStatus } from '@/types/payroll-config';
 import { Button, Label } from '@/components/ui/shadcn';
 

@@ -1,4 +1,6 @@
+import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import { AppShell } from '@/components/layout/app-shell';
 
 export const metadata: Metadata = {
   title: 'Payroll Configuration',
@@ -7,18 +9,20 @@ export const metadata: Metadata = {
 
 export default function PayrollConfigLayout({
   children,
-  sidebar,
 }: {
-  children: React.ReactNode;
-  sidebar: React.ReactNode;
+  children: ReactNode;
+  sidebar?: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
-      {sidebar}
-      <main className="flex-1">
+    <AppShell
+      title="Payroll configuration"
+      subtitle="Manage payroll policies, pay grades, allowances, tax rules, and related settings"
+      allowedRoles={['Payroll Manager', 'Payroll Specialist', 'HR Admin', 'HR Manager', 'System Admin']}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {children}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }
 

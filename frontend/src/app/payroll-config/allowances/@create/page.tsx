@@ -1,10 +1,13 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, ChangeEvent, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { allowancesApi } from '@/lib/api';
+import { allowancesApi } from '@/app/payroll-config/client';
 import { CreateAllowanceDto } from '@/types/payroll-config';
-import { Button, Input, Label } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 function CreateAllowanceForm() {
   const router = useRouter();
@@ -14,96 +17,114 @@ function CreateAllowanceForm() {
     name: '',
     amount: 0,
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleChange = (field: keyof CreateAllowanceDto) => (e: ChangeEvent<HTMLInputElement>) => {
+    const value = field === 'amount' ? parseFloat(e.target.value) || 0 : e.target.value;
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setErrors({});
+    setError(null);
+    setSuccess(false);
     setLoading(true);
 
     try {
       await allowancesApi.create(formData);
+      setSuccess(true);
       router.push('/payroll-config/allowances');
       router.refresh();
-    } catch (error: any) {
-      console.error('Error creating allowance:', error);
-      alert(error.message || 'Failed to create allowance');
+    } catch (err) {
+      console.error('Error creating allowance:', err);
+      const message = err instanceof Error ? err.message : 'Failed to create allowance';
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) router.push('/payroll-config/allowances');
+  };
+
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-[100]">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto relative z-[101]">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Create New Allowance</h2>
-            <button
-              onClick={() => router.push('/payroll-config/allowances')}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              type="button"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+    <Dialog open={show} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create new allowance</DialogTitle>
+          <DialogDescription>Define the allowance details and amount.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" value={formData.name} onChange={handleChange('name')} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount</Label>
+              <Input
+                id="amount"
+                type="number"
+                min={0}
+                value={String(formData.amount)}
+                onChange={handleChange('amount')}
+                required
+              />
+            </div>
           </div>
-          <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Name</Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Amount</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={String(formData.amount)}
-                  onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Frequency</Label>
-                <select name="frequency" className="mt-1 block w-full rounded-md border px-3 py-2">
-                  <option value="monthly">Monthly</option>
-                  <option value="yearly">Yearly</option>
-                </select>
-              </div>
-              <div>
-                <Label>Status</Label>
-                <select name="status" className="mt-1 block w-full rounded-md border px-3 py-2">
-                  <option value="DRAFT">Draft</option>
-                  <option value="APPROVED">Approved</option>
-                  <option value="REJECTED">Rejected</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex justify-end space-x-3 mt-6">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => router.push('/payroll-config/allowances')}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="frequency">Frequency</Label>
+              <select
+                id="frequency"
+                name="frequency"
+                className="mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+                defaultValue="monthly"
               >
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" disabled={loading}>
-                Create
-              </Button>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
             </div>
-          </form>
-        </div>
-      </div>
-    </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <select
+                id="status"
+                name="status"
+                className="mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+                defaultValue="DRAFT"
+              >
+                <option value="DRAFT">Draft</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+            </div>
+          </div>
+          {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+          {success && (
+            <p className="text-sm font-medium text-green-600">
+              Allowance created successfully.
+            </p>
+          )}
+          <DialogFooter className="justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push('/payroll-config/allowances')}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              Create
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

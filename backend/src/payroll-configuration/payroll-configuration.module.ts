@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { PayrollConfigurationService } from './payroll-configuration.service';
 import { PayrollConfigurationController } from './payroll-configuration.controller';
 // --- Auth Module Integration ---
-import { AuthModule } from '../auth/authentication/auth.module'; // Import AuthModule
+import { AuthModule } from '../auth/auth.module'; // Import AuthModule
 
 // Import All Schemas
 import { allowance, allowanceSchema } from './models/allowance.schema';
@@ -15,10 +15,6 @@ import { payGrade, payGradeSchema } from './models/payGrades.schema';
 import { payType, payTypeSchema } from './models/payType.schema';
 import { terminationAndResignationBenefits, terminationAndResignationBenefitsSchema } from './models/terminationAndResignationBenefits';
 import { payrollPolicies, payrollPoliciesSchema } from './models/payrollPolicies.schema';
-
-// Integration Modules
-import { OrganizationStructureModule } from '../organization-structure/organization-structure.module';
-import { EmployeeProfileModule } from '../employee-profile/employee-profile.module';
 
 @Module({
   imports: [
@@ -34,8 +30,6 @@ import { EmployeeProfileModule } from '../employee-profile/employee-profile.modu
       { name: payrollPolicies.name, schema: payrollPoliciesSchema },
     ]),
     AuthModule,
-    OrganizationStructureModule,
-    EmployeeProfileModule,
   ],
   controllers: [PayrollConfigurationController],
   providers: [PayrollConfigurationService],

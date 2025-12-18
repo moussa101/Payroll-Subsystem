@@ -1,10 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, ChangeEvent, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { allowancesApi } from '@/lib/api';
+import { allowancesApi } from '@/app/payroll-config/client';
 import { Allowance, ConfigStatus } from '@/types/payroll-config';
-import { Button, Label } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 function ChangeStatusForm() {
   const router = useRouter();
@@ -17,6 +20,8 @@ function ChangeStatusForm() {
   });
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const show = Boolean(id);
 
   useEffect(() => {
     const loadAllowance = async () => {
@@ -33,7 +38,8 @@ function ChangeStatusForm() {
         });
       } catch (error) {
         console.error('Error loading allowance:', error);
-        alert('Failed to load allowance');
+        const message = error instanceof Error ? error.message : 'Failed to load allowance';
+        alert(message);
         router.push('/payroll-config/allowances');
       } finally {
         setFetching(false);
@@ -44,9 +50,16 @@ function ChangeStatusForm() {
 
   if (!id) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleStatusChange = (e: ChangeEvent<HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    const nextValue = name === 'status' ? (value as ConfigStatus) : value;
+    setStatusData((prev) => ({ ...prev, [name]: nextValue }));
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
       await allowancesApi.changeStatus(id, statusData);
@@ -55,7 +68,7 @@ function ChangeStatusForm() {
     } catch (error: unknown) {
       console.error('Error changing status:', error);
       const message = error instanceof Error ? error.message : 'Failed to change status';
-      alert(message);
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -71,70 +84,63 @@ function ChangeStatusForm() {
     );
   }
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) router.push('/payroll-config/allowances');
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-[100]">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto relative z-[101]">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Change Status: {allowance?.name}
-            </h2>
-            <button
-              onClick={() => router.push('/payroll-config/allowances')}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              type="button"
+    <Dialog open={show} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Change status</DialogTitle>
+          <DialogDescription>Update the approval state for this allowance.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Current status: <span className="font-semibold text-foreground">{allowance?.status}</span>
+          </p>
+          <div className="space-y-2">
+            <Label htmlFor="status">New status</Label>
+            <select
+              id="status"
+              name="status"
+              value={statusData.status}
+              onChange={handleStatusChange}
+              className="mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+              required
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+              <option value={ConfigStatus.APPROVED}>Approve</option>
+              <option value={ConfigStatus.REJECTED}>Reject</option>
+            </select>
           </div>
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-3">
-                Current Status: <span className="font-semibold">{allowance?.status}</span>
-              </p>
-            </div>
-            <div className="mb-4">
-              <Label>New Status</Label>
-              <select
-                value={statusData.status}
-                onChange={(e) => setStatusData({ ...statusData, status: e.target.value as ConfigStatus })}
-                className="mt-1 block w-full rounded-md border px-3 py-2"
+          {statusData.status === ConfigStatus.REJECTED && (
+            <div className="space-y-2">
+              <Label htmlFor="rejectionReason">Rejection reason</Label>
+              <Textarea
+                id="rejectionReason"
+                name="rejectionReason"
+                value={statusData.rejectionReason || ''}
+                onChange={handleStatusChange}
                 required
-              >
-                <option value={ConfigStatus.APPROVED}>Approve</option>
-                <option value={ConfigStatus.REJECTED}>Reject</option>
-              </select>
+              />
             </div>
-            {statusData.status === ConfigStatus.REJECTED && (
-              <div className="mb-4">
-                <Label>Rejection Reason</Label>
-                <textarea
-                  value={statusData.rejectionReason || ''}
-                  onChange={(e) => setStatusData({ ...statusData, rejectionReason: e.target.value })}
-                  rows={3}
-                  className="mt-1 block w-full rounded-md border px-3 py-2"
-                  required
-                />
-              </div>
-            )}
-            <div className="flex justify-end space-x-3 mt-6">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => router.push('/payroll-config/allowances')}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" disabled={loading}>
-                Confirm
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+          )}
+          {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+          <DialogFooter className="justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push('/payroll-config/allowances')}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              Confirm
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

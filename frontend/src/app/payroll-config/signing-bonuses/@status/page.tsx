@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signingBonusesApi } from '@/lib/api';
+import { signingBonusesApi } from '@/app/payroll-config/client';
 import { SigningBonus, ConfigStatus } from '@/types/payroll-config';
 import { Button, Label } from '@/components/ui/shadcn';
 

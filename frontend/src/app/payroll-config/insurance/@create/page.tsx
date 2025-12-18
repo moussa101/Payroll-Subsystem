@@ -2,7 +2,7 @@
 
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { insuranceApi } from '@/lib/api';
+import { insuranceApi } from '@/app/payroll-config/client';
 import { CreateInsuranceDto } from '@/types/payroll-config';
 import { Button, Input, Label } from '@/components/ui/shadcn';
 

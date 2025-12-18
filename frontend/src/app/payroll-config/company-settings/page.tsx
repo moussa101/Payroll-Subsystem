@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { companySettingsApi } from '@/lib/api';
+import { companySettingsApi } from '@/app/payroll-config/client';
 import { CompanySettings, CreateCompanySettingsDto, UpdateCompanySettingsDto } from '@/types/payroll-config';
-import { Button, Input, Label } from '@/components/ui/shadcn';
-import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatDateReadable } from '@/lib/format';
 
 export default function CompanySettingsPage() {
@@ -16,7 +19,6 @@ export default function CompanySettingsPage() {
     timeZone: '',
     currency: 'EGP',
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadSettings();
@@ -50,13 +52,11 @@ export default function CompanySettingsPage() {
         currency: settings.currency || 'EGP',
       });
     }
-    setErrors({});
     setIsEditModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrors({});
 
     try {
       if (settings) {
@@ -66,9 +66,10 @@ export default function CompanySettingsPage() {
       }
       setIsEditModalOpen(false);
       loadSettings();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving settings:', error);
-      alert(error.message || 'Failed to save settings');
+      const message = error instanceof Error ? error.message : 'Failed to save settings';
+      alert(message);
     }
   };
 
@@ -95,95 +96,108 @@ export default function CompanySettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Company Settings</h1>
-        <Button onClick={handleEdit} variant={settings ? 'success' : 'primary'}>
-          {settings ? 'Edit Settings' : 'Create Settings'}
-        </Button>
+    <div className="min-h-screen bg-slate-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 space-y-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold text-foreground">Company Settings</h1>
+            <p className="text-muted-foreground text-sm">Pay dates, time zone, and currency for payroll runs.</p>
+          </div>
+          <Button onClick={handleEdit}>{settings ? 'Edit settings' : 'Create settings'}</Button>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Current settings</CardTitle>
+            <CardDescription>These values are used across payroll execution and reports.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {settings ? (
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Pay date</p>
+                  <p className="text-base font-medium text-foreground">{formatDateReadable(settings.payDate)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Time zone</p>
+                  <p className="text-base font-medium text-foreground">{settings.timeZone}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Currency</p>
+                  <p className="text-base font-medium text-foreground">{settings.currency || 'EGP'}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-4 flex-col sm:flex-row">
+                <div className="space-y-1 text-center sm:text-left">
+                  <p className="text-base font-medium text-foreground">No company settings configured yet.</p>
+                  <p className="text-sm text-muted-foreground">Set a default pay date, time zone, and currency.</p>
+                </div>
+                <Button onClick={handleEdit}>Create settings</Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{settings ? 'Edit company settings' : 'Create company settings'}</DialogTitle>
+              <DialogDescription>These values determine payroll time zone, currency, and pay date.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="payDate">Pay date</Label>
+                <Input
+                  id="payDate"
+                  type="date"
+                  value={formData.payDate}
+                  onChange={(e) => setFormData({ ...formData, payDate: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="timeZone">Time zone</Label>
+                <select
+                  id="timeZone"
+                  value={formData.timeZone}
+                  onChange={(e) => setFormData({ ...formData, timeZone: e.target.value })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  required
+                >
+                  <option value="">Select time zone</option>
+                  {timeZoneOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="currency">Currency</Label>
+                <select
+                  id="currency"
+                  value={formData.currency}
+                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {currencyOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <DialogFooter className="justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">{settings ? 'Update' : 'Create'}</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {settings ? (
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-gray-500">Pay Date</label>
-              <p className="mt-1 text-lg text-gray-900">
-                {formatDateReadable(settings.payDate)}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">Time Zone</label>
-              <p className="mt-1 text-lg text-gray-900">{settings.timeZone}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">Currency</label>
-              <p className="mt-1 text-lg text-gray-900">{settings.currency || 'EGP'}</p>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white shadow rounded-lg p-6 text-center">
-          <p className="text-gray-600 mb-4">No company settings configured yet.</p>
-          <Button onClick={handleEdit} variant={settings ? 'success' : 'primary'}>
-            {settings ? 'Edit Settings' : 'Create Settings'}
-          </Button>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      <Modal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        title={settings ? 'Edit Company Settings' : 'Create Company Settings'}
-        size="md"
-      >
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <Label>Pay Date</Label>
-            <Input
-              type="date"
-              value={formData.payDate}
-              onChange={(e) => setFormData({ ...formData, payDate: e.target.value })}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <Label>Time Zone</Label>
-            <select
-              value={formData.timeZone}
-              onChange={(e) => setFormData({ ...formData, timeZone: e.target.value })}
-              className="mt-1 block w-full rounded-md border px-3 py-2"
-              required
-            >
-              <option value="">Select Time Zone</option>
-              {timeZoneOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="mb-4">
-            <Label>Currency</Label>
-            <select
-              value={formData.currency}
-              onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-              className="mt-1 block w-full rounded-md border px-3 py-2"
-            >
-              {currencyOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex justify-end space-x-3 mt-6">
-            <Button type="button" variant="secondary" onClick={() => setIsEditModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary">
-              {settings ? 'Update' : 'Create'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }

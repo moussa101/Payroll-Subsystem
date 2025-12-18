@@ -2,11 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { insuranceApi } from '@/lib/api';
+import { insuranceApi } from '@/app/payroll-config/client';
 import { InsuranceBracket, ConfigStatus } from '@/types/payroll-config';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge } from '@/components/ui/shadcn';
-import { Button } from '@/components/ui/shadcn';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatNumber } from '@/lib/format';
+
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 export default function InsurancePage() {
   const [insuranceBrackets, setInsuranceBrackets] = useState<InsuranceBracket[]>([]);
@@ -35,9 +39,10 @@ export default function InsurancePage() {
     try {
       await insuranceApi.delete(insurance._id);
       loadInsuranceBrackets();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting insurance bracket:', error);
-      alert(error.message || 'Failed to delete insurance bracket');
+      const message = error instanceof Error ? error.message : 'Failed to delete insurance bracket';
+      alert(message);
     }
   };
 
@@ -46,77 +51,87 @@ export default function InsurancePage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-foreground">Insurance Brackets</h1>
-        <Link href="/payroll-config/insurance?create=true">
-          <Button>Create Insurance Bracket</Button>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-slate-50 py-8">
+      <div className="max-w-6xl mx-auto px-4 space-y-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold text-foreground">Insurance Brackets</h1>
+            <p className="text-muted-foreground text-sm">Bracket salary ranges and contribution rates.</p>
+          </div>
+          <Link href="/payroll-config/insurance?create=true">
+            <Button>Create insurance bracket</Button>
+          </Link>
+        </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Min Salary</TableHead>
-            <TableHead>Max Salary</TableHead>
-            <TableHead>Employee Rate (%)</TableHead>
-            <TableHead>Employer Rate (%)</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {insuranceBrackets.map((insurance) => (
-            <TableRow key={insurance._id}>
-              <TableCell>{insurance.name}</TableCell>
-              <TableCell>{formatNumber(insurance.minSalary)}</TableCell>
-              <TableCell>{formatNumber(insurance.maxSalary)}</TableCell>
-              <TableCell>{insurance.employeeRate}%</TableCell>
-              <TableCell>{insurance.employerRate}%</TableCell>
-              <TableCell>
-                {(() => {
-                  const map: Record<string, { label: string; variant: any }> = {
-                    [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
-                    [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
-                    [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
-                  };
-                  const s = map[insurance.status] || { label: insurance.status, variant: 'default' };
-                  return <Badge variant={s.variant}>{s.label}</Badge>;
-                })()}
-              </TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
-                  <Link href={`/payroll-config/insurance?edit=${insurance._id}`}>
-                    <Button
-                      size="sm"
-                      variant="success"
-                      disabled={insurance.status !== ConfigStatus.DRAFT}
-                    >
-                      Edit
-                    </Button>
-                  </Link>
-                  <Link href={`/payroll-config/insurance?status=${insurance._id}`}>
-                    <Button
-                      size="sm"
-                      variant="primary"
-                    >
-                      Change Status
-                    </Button>
-                  </Link>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDelete(insurance)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Insurance bracket list</CardTitle>
+            <CardDescription>Salary thresholds with employee and employer rates.</CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Min salary</TableHead>
+                  <TableHead>Max salary</TableHead>
+                  <TableHead>Employee rate (%)</TableHead>
+                  <TableHead>Employer rate (%)</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {insuranceBrackets.map((insurance) => (
+                  <TableRow key={insurance._id}>
+                    <TableCell className="font-medium">{insurance.name}</TableCell>
+                    <TableCell>{formatNumber(insurance.minSalary)}</TableCell>
+                    <TableCell>{formatNumber(insurance.maxSalary)}</TableCell>
+                    <TableCell>{insurance.employeeRate}%</TableCell>
+                    <TableCell>{insurance.employerRate}%</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const map: Record<string, { label: string; variant: BadgeVariant }> = {
+                          [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
+                          [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
+                          [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
+                        };
+                        const s = map[insurance.status] || { label: insurance.status, variant: 'default' };
+                        return <Badge variant={s.variant}>{s.label}</Badge>;
+                      })()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-2">
+                        <Link href={`/payroll-config/insurance?edit=${insurance._id}`}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={insurance.status !== ConfigStatus.DRAFT}
+                          >
+                            Edit
+                          </Button>
+                        </Link>
+                        <Link href={`/payroll-config/insurance?status=${insurance._id}`}>
+                          <Button size="sm" variant="secondary">
+                            Change status
+                          </Button>
+                        </Link>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(insurance)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

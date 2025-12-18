@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { payrollPoliciesApi } from '@/lib/api';
+import { payrollPoliciesApi } from '@/app/payroll-config/client';
 import { PayrollPolicy, UpdatePayrollPolicyDto, ConfigStatus, PolicyType, Applicability } from '@/types/payroll-config';
 import { Button, Input, Label } from '@/components/ui/shadcn';
 

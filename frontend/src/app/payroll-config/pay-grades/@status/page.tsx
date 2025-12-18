@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { payGradesApi } from '@/lib/api';
+import { payGradesApi } from '@/app/payroll-config/client';
 import { PayGrade, ConfigStatus } from '@/types/payroll-config';
 import { Button, Label } from '@/components/ui/shadcn';
 
