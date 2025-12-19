@@ -29,13 +29,15 @@ export class RefundsService {
     const refund = new this.refundModel({
       ...createRefundDto,
       employeeId: user.employeeId,
-      financeStaffId: this.isAdmin(user) ? createRefundDto.financeStaffId ?? undefined : undefined,
+      financeStaffId: this.isPrivileged(user)
+        ? createRefundDto.financeStaffId ?? undefined
+        : undefined,
     });
     return refund.save();
   }
 
   async findAll(user: AuthUser): Promise<refunds[]> {
-    const filter = this.isAdmin(user) ? {} : { employeeId: user.employeeId };
+    const filter = this.isPrivileged(user) ? {} : { employeeId: user.employeeId };
     return this.refundModel
       .find(filter)
       .populate('claimId')
@@ -84,7 +86,7 @@ export class RefundsService {
     }
 
     const payload: Partial<refunds> = payloadObj;
-    if (!this.isAdmin(user)) {
+    if (!this.isPrivileged(user)) {
       delete (payload as any).employeeId;
       delete (payload as any).financeStaffId;
       delete (payload as any).status;
@@ -98,7 +100,7 @@ export class RefundsService {
   }
 
   async remove(id: string, user: AuthUser): Promise<void> {
-    this.assertAdmin(user);
+    this.assertPrivileged(user);
     const deleted = await this.refundModel.findByIdAndDelete(id).exec();
     if (!deleted) {
       throw new NotFoundException(`Refund with id "${id}" not found`);
@@ -172,8 +174,15 @@ export class RefundsService {
     return [user.role, ...(user.roles ?? [])].filter(Boolean) as SystemRole[];
   }
 
-  private isAdmin(user: AuthUser): boolean {
-    return this.getRoles(user).includes(SystemRole.SYSTEM_ADMIN);
+  private isPrivileged(user: AuthUser): boolean {
+    return this.getRoles(user).some((r) =>
+      [
+        SystemRole.SYSTEM_ADMIN,
+        SystemRole.PAYROLL_SPECIALIST,
+        SystemRole.PAYROLL_MANAGER,
+        SystemRole.FINANCE_STAFF,
+      ].includes(r),
+    );
   }
 
   private assertSelfOrAdmin(
@@ -181,16 +190,16 @@ export class RefundsService {
     user: AuthUser,
     action = 'access this refund',
   ): void {
-    if (this.isAdmin(user)) return;
+    if (this.isPrivileged(user)) return;
 
     if (refund.employeeId?.toString() !== user.employeeId) {
       throw new ForbiddenException(`You can only ${action}`);
     }
   }
 
-  private assertAdmin(user: AuthUser): void {
-    if (!this.isAdmin(user)) {
-      throw new ForbiddenException('Only admins can perform this action');
+  private assertPrivileged(user: AuthUser): void {
+    if (!this.isPrivileged(user)) {
+      throw new ForbiddenException('Only payroll specialists, managers, finance staff, or admins can perform this action');
     }
   }
 }

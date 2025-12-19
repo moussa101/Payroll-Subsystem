@@ -140,9 +140,9 @@ export default function ClaimsPage() {
               label: "History",
               render: (row) =>
                 row.statusHistory && row.statusHistory.length ? (
-                  <div className="space-y-1 text-xs text-slate-200">
-                    {row.statusHistory.slice(-3).map((h, idx) => (
-                      <div key={idx} className="flex items-center gap-1">
+                  <div className="space-y-1 text-xs text-slate-200 max-w-xs">
+                    {row.statusHistory.map((h, idx) => (
+                      <div key={idx} className="flex items-center gap-1 flex-wrap">
                         <span className="rounded bg-white/10 px-2 py-0.5 text-[11px] font-semibold">
                           {h.status}
                         </span>

@@ -18,9 +18,9 @@ import { CurrentUser, JwtAuthGuard } from '../../auth';
 import type { AuthUser } from '../../auth/auth-user.interface';
 import { FinanceApproveClaimDto } from '../dtos/finance-approve-claim.dto';
 
-@Controller('claims')
+@Controller('expenses')
 @UseGuards(JwtAuthGuard)
-export class ClaimsController {
+export class ExpensesController {
   constructor(private readonly claimsService: ClaimsService) {}
 
   @Post()
@@ -28,30 +28,20 @@ export class ClaimsController {
     @Body() createClaimDto: CreateClaimDto,
     @CurrentUser() user: AuthUser,
   ): Promise<claims> {
-    return this.claimsService.create(createClaimDto, user);
+    return this.claimsService.createExpense(createClaimDto, user);
   }
 
   @Get()
   findAll(@CurrentUser() user: AuthUser): Promise<claims[]> {
-    return this.claimsService.findAll(user);
+    return this.claimsService.findAllExpenses(user);
   }
 
-  // Optional: GET /claims/by-claim-id/:claimId (business id)
-  @Get('by-claim-id/:claimId')
-  findByClaimId(
-    @Param('claimId') claimId: string,
-    @CurrentUser() user: AuthUser,
-  ): Promise<claims> {
-    return this.claimsService.findByClaimId(claimId, user);
-  }
-
-  // GET /claims/:id (Mongo _id)
   @Get(':id')
   findOne(
     @Param('id') id: string,
     @CurrentUser() user: AuthUser,
   ): Promise<claims> {
-    return this.claimsService.findOne(id, user);
+    return this.claimsService.findOneExpense(id, user);
   }
 
   @Patch(':id')
@@ -60,16 +50,18 @@ export class ClaimsController {
     @Body() updateClaimDto: UpdateClaimDto,
     @CurrentUser() user: AuthUser,
   ): Promise<claims> {
-    return this.claimsService.update(id, updateClaimDto, user);
+    return this.claimsService.updateExpense(id, updateClaimDto, user);
   }
+
   @Post(':id/approve')
   approve(
     @Param('id') id: string,
-    @Body() approveClaimDto: ApproveClaimDto,
+    @Body() dto: ApproveClaimDto,
     @CurrentUser() user: AuthUser,
   ): Promise<claims> {
-    return this.claimsService.approve(id, approveClaimDto, user);
+    return this.claimsService.approveExpense(id, dto, user);
   }
+
   @Post(':id/finance-approve')
   financeApprove(
     @Param('id') id: string,
@@ -78,16 +70,18 @@ export class ClaimsController {
   ): Promise<claims> {
     return this.claimsService.financeApprove(id, dto, user);
   }
+
   @Post(':id/reject')
   reject(
     @Param('id') id: string,
     @Body() rejectClaimDto: RejectClaimDto,
     @CurrentUser() user: AuthUser,
   ): Promise<claims> {
-    return this.claimsService.reject(id, rejectClaimDto, user);
+    return this.claimsService.rejectExpense(id, rejectClaimDto, user);
   }
+
   @Delete(':id')
   remove(@Param('id') id: string, @CurrentUser() user: AuthUser): Promise<void> {
-    return this.claimsService.remove(id, user);
+    return this.claimsService.removeExpense(id, user);
   }
 }

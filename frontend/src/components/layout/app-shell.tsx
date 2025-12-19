@@ -130,7 +130,12 @@ const navSections: NavSection[] = [
   {
     label: "Payroll Tracking",
     items: [
-      { href: "/payroll-tracking", label: "Payroll tracking" },
+      { href: "/payroll-tracking", label: "Overview" },
+      { href: "/payroll-tracking/payslips", label: "Payslips" },
+      { href: "/payroll-tracking/claims", label: "Claims" },
+      { href: "/payroll-tracking/expenses", label: "Expenses" },
+      { href: "/payroll-tracking/refunds", label: "Refunds" },
+      { href: "/payroll-tracking/disputes", label: "Disputes" },
     ],
   },
 ];

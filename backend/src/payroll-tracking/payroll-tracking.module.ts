@@ -15,10 +15,15 @@ import {
   payrollRuns,
   payrollRunsSchema,
 } from '../payroll-execution/models/payrollRuns.schema';
+import { paySlip, paySlipSchema } from '../payroll-execution/models/payslip.schema';
 import { ClaimsController } from './controllers/claims.controller';
 import { DisputesController } from './controllers/disputes.controller';
 import { RefundsController } from './controllers/refunds.controller';
+import { PayslipsController } from './controllers/payslips.controller';
 import { AuthModule } from '../auth/auth.module';
+import { EmployeeProfile, EmployeeProfileSchema } from '../employee-profile/models/employee-profile.schema';
+import { ExpensesController } from './controllers/expenses.controller';
+import { FinanceNotificationsService } from './notifications/finance-notifications.service';
 
 @Module({
 
@@ -26,14 +31,16 @@ import { AuthModule } from '../auth/auth.module';
     PayrollConfigurationModule,
     forwardRef(() => PayrollExecutionModule),
     AuthModule,
-    MongooseModule.forFeature([
+  MongooseModule.forFeature([
       { name: refunds.name, schema: refundsSchema },
       { name: claims.name, schema: claimsSchema },
       { name: disputes.name, schema: disputesSchema },
       { name: payrollRuns.name, schema: payrollRunsSchema },
+      { name: paySlip.name, schema: paySlipSchema },
+      { name: EmployeeProfile.name, schema: EmployeeProfileSchema },
     ])],
-  controllers: [PayrollTrackingController, TaxController, ClaimsController, DisputesController, RefundsController],
-  providers: [PayrollTrackingService, RefundsService, ClaimsService, DisputesService],
-  exports:[PayrollTrackingService]
+  controllers: [PayrollTrackingController, TaxController, ClaimsController, DisputesController, RefundsController, PayslipsController, ExpensesController],
+  providers: [PayrollTrackingService, RefundsService, ClaimsService, DisputesService, FinanceNotificationsService],
+  exports:[PayrollTrackingService, RefundsService, FinanceNotificationsService]
 })
 export class PayrollTrackingModule { }

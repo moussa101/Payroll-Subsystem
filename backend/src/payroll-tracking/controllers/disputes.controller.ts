@@ -7,6 +7,7 @@ import { ApproveDisputeDto } from '../dtos/approve-dispute.dto';
 import { RejectDisputeDto } from '../dtos/reject-dispute.dto';
 import { CurrentUser, JwtAuthGuard } from '../../auth';
 import type { AuthUser } from '../../auth/auth-user.interface';
+import { FinanceApproveDisputeDto } from '../dtos/finance-approve-dispute.dto';
 
 @Controller('disputes')
 @UseGuards(JwtAuthGuard)
@@ -58,6 +59,14 @@ export class DisputesController {
     @CurrentUser() user: AuthUser,
   ): Promise<disputes> {
     return this.disputesService.approve(id, approveDisputeDto, user);
+  }
+  @Post(':id/finance-approve')
+  financeApprove(
+    @Param('id') id: string,
+    @Body() dto: FinanceApproveDisputeDto,
+    @CurrentUser() user: AuthUser,
+  ): Promise<disputes> {
+    return this.disputesService.financeApprove(id, dto, user);
   }
 
   @Post(':id/reject')

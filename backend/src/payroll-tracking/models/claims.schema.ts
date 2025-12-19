@@ -44,6 +44,21 @@ export class claims {
   resolutionComment?: string;
 
   @Prop({
+    type: {
+      category: String,
+      merchant: String,
+      incurredAt: String,
+      receipts: [String],
+    },
+  })
+  expenseDetails?: {
+    category?: string;
+    merchant?: string;
+    incurredAt?: string;
+    receipts?: string[];
+  };
+
+  @Prop({
     type: [
       {
         status: { type: String },

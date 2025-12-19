@@ -10,6 +10,8 @@ import { DisputeStatus } from '../enums/payroll-tracking-enum';
 import { RejectDisputeDto } from '../dtos/reject-dispute.dto';
 import { AuthUser } from '../../auth/auth-user.interface';
 import { SystemRole } from '../../employee-profile/enums/employee-profile.enums';
+import { FinanceApproveDisputeDto } from '../dtos/finance-approve-dispute.dto';
+import { FinanceNotificationsService } from '../notifications/finance-notifications.service';
 
 @Injectable()
 export class DisputesService {
@@ -17,6 +19,7 @@ export class DisputesService {
     @InjectModel(disputes.name)
     private readonly disputeModel: Model<disputesDocument>,
     private readonly refundsService: RefundsService,
+    private readonly notifications: FinanceNotificationsService,
   ) {}
 
   private pushHistory(
@@ -33,13 +36,15 @@ export class DisputesService {
     const dispute = new this.disputeModel({
       ...createDisputeDto,
       employeeId: user.employeeId,
-      financeStaffId: this.isAdmin(user) ? createDisputeDto.financeStaffId ?? undefined : undefined,
+      financeStaffId: this.isPrivileged(user)
+        ? createDisputeDto.financeStaffId ?? undefined
+        : undefined,
     });
     return dispute.save();
   }
 
   async findAll(user: AuthUser): Promise<disputes[]> {
-    const filter = this.isAdmin(user) ? {} : { employeeId: user.employeeId };
+    const filter = this.isPrivileged(user) ? {} : { employeeId: user.employeeId };
     return this.disputeModel
       .find(filter)
       .populate('employeeId')
@@ -90,7 +95,7 @@ export class DisputesService {
     this.assertSelfOrAdmin(dispute, user, 'update this dispute');
 
     const payload = { ...updateDisputeDto } as Partial<disputes>;
-    if (!this.isAdmin(user)) {
+    if (!this.isPrivileged(user)) {
       delete (payload as any).employeeId;
       delete (payload as any).financeStaffId;
       delete (payload as any).status;
@@ -107,7 +112,7 @@ export class DisputesService {
   }
 
   async remove(id: string, user: AuthUser): Promise<void> {
-    this.assertAdmin(user);
+    this.assertPrivileged(user);
     const deleted = await this.disputeModel.findByIdAndDelete(id).exec();
     if (!deleted) {
       throw new NotFoundException(`Dispute with id "${id}" not found`);
@@ -116,28 +121,83 @@ export class DisputesService {
 
 
   async approve(id: string, dto: ApproveDisputeDto, user: AuthUser): Promise<disputes> {
-    this.assertAdmin(user);
+    const roles = this.getRoles(user);
+    const isManagerLevel =
+      roles.includes(SystemRole.PAYROLL_MANAGER) || roles.includes(SystemRole.SYSTEM_ADMIN);
+    const isSpecialist = roles.includes(SystemRole.PAYROLL_SPECIALIST);
+    if (!isManagerLevel && !isSpecialist) {
+      throw new ForbiddenException('Only payroll specialists or managers can approve disputes');
+    }
+    const dispute = await this.disputeModel.findById(id).exec();
+    if (!dispute) {
+      throw new NotFoundException(`Dispute with id "${id}" not found`);
+    }
+
+    if (isManagerLevel) {
+      dispute.status = DisputeStatus.PENDING_FINANCE_APPROVAL;
+      if (dto.resolutionComment) {
+        dispute.resolutionComment = dto.resolutionComment;
+      }
+
+      this.pushHistory(dispute, DisputeStatus.PENDING_FINANCE_APPROVAL, dto.resolutionComment);
+      await dispute.save();
+      this.notifications.emit({
+        type: 'dispute',
+        id: dispute._id?.toString() ?? '',
+        businessId: dispute.disputeId,
+        status: DisputeStatus.PENDING_FINANCE_APPROVAL,
+        createdAt: new Date(),
+      });
+    } else {
+      dispute.status = DisputeStatus.PENDING_MANAGER_APPROVAL;
+      this.pushHistory(
+        dispute,
+        DisputeStatus.PENDING_MANAGER_APPROVAL,
+        dto.resolutionComment,
+      );
+      await dispute.save();
+    }
+
+    return dispute;
+  }
+
+  async financeApprove(id: string, dto: FinanceApproveDisputeDto, user: AuthUser): Promise<disputes> {
+    const roles = this.getRoles(user);
+    const isFinance =
+      roles.includes(SystemRole.FINANCE_STAFF) || roles.includes(SystemRole.SYSTEM_ADMIN);
+    if (!isFinance) {
+      throw new ForbiddenException('Only finance staff can finance-approve disputes');
+    }
+
     const dispute = await this.disputeModel.findById(id).exec();
     if (!dispute) {
       throw new NotFoundException(`Dispute with id "${id}" not found`);
     }
 
     dispute.status = DisputeStatus.APPROVED;
-    if (dto.resolutionComment) {
-      dispute.resolutionComment = dto.resolutionComment;
+    if (dto.financeNote) {
+      dispute.resolutionComment = [dispute.resolutionComment, dto.financeNote]
+        .filter(Boolean)
+        .join(' | ');
     }
 
-    this.pushHistory(dispute, DisputeStatus.APPROVED, dto.resolutionComment);
-
+    this.pushHistory(dispute, DisputeStatus.APPROVED, dto.financeNote);
     await dispute.save();
 
     await this.refundsService.createFromDispute(dispute, dto.refundAmount);
+    this.notifications.emit({
+      type: 'dispute',
+      id: dispute._id?.toString() ?? '',
+      businessId: dispute.disputeId,
+      status: DisputeStatus.APPROVED,
+      createdAt: new Date(),
+    });
 
     return dispute;
   }
 
   async reject(id: string, dto: RejectDisputeDto, user: AuthUser): Promise<disputes> {
-    this.assertAdmin(user);
+    this.assertPrivileged(user);
     const dispute = await this.disputeModel.findById(id).exec();
     if (!dispute) {
       throw new NotFoundException(`Dispute with id "${id}" not found`);
@@ -156,8 +216,15 @@ export class DisputesService {
     return [user.role, ...(user.roles ?? [])].filter(Boolean) as SystemRole[];
   }
 
-  private isAdmin(user: AuthUser): boolean {
-    return this.getRoles(user).includes(SystemRole.SYSTEM_ADMIN);
+  private isPrivileged(user: AuthUser): boolean {
+    return this.getRoles(user).some((r) =>
+      [
+        SystemRole.SYSTEM_ADMIN,
+        SystemRole.PAYROLL_SPECIALIST,
+        SystemRole.PAYROLL_MANAGER,
+        SystemRole.FINANCE_STAFF,
+      ].includes(r),
+    );
   }
 
   private assertSelfOrAdmin(
@@ -165,16 +232,16 @@ export class DisputesService {
     user: AuthUser,
     action = 'access this dispute',
   ): void {
-    if (this.isAdmin(user)) return;
+    if (this.isPrivileged(user)) return;
 
     if (dispute.employeeId?.toString() !== user.employeeId) {
       throw new ForbiddenException(`You can only ${action}`);
     }
   }
 
-  private assertAdmin(user: AuthUser): void {
-    if (!this.isAdmin(user)) {
-      throw new ForbiddenException('Only admins can perform this action');
+  private assertPrivileged(user: AuthUser): void {
+    if (!this.isPrivileged(user)) {
+      throw new ForbiddenException('Only payroll specialists, managers, finance staff, or admins can perform this action');
     }
   }
 }

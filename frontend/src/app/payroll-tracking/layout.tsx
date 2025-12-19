@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 
 const tabs = [
   { href: "/payroll-tracking", label: "Overview" },
+  { href: "/payroll-tracking/payslips", label: "Payslips" },
   { href: "/payroll-tracking/claims", label: "Claims" },
+  { href: "/payroll-tracking/expenses", label: "Expenses" },
   { href: "/payroll-tracking/refunds", label: "Refunds" },
   { href: "/payroll-tracking/disputes", label: "Disputes" },
 ];
@@ -23,7 +25,7 @@ export default function PayrollTrackingLayout({
   return (
     <AppShell
       title="Payroll tracking"
-      subtitle="Monitor claims, refunds, and disputes"
+      subtitle="Monitor payslips, claims, refunds, and disputes"
     >
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2">

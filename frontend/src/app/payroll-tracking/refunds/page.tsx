@@ -125,6 +125,21 @@ export default function RefundsPage() {
               label: "Status",
               render: (row) => <StatusPill status={row.status} />,
             },
+            {
+              key: "history",
+              label: "History",
+              render: (row) => (
+                <div className="text-xs text-slate-300">
+                  <p>Created → {row.referenceType}</p>
+                  <p>
+                    Payment:{" "}
+                    {row.status === "paid"
+                      ? "Included in payroll"
+                      : "Pending finance approval / payroll run"}
+                  </p>
+                </div>
+              ),
+            },
           ]}
           rows={refunds}
           empty="No refunds in the queue"
