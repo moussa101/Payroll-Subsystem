@@ -1,35 +1,39 @@
-import type { ReactNode } from 'react'
-import { cn } from '@/lib/utils'
 
-const variants = {
-  default: 'bg-primary/10 text-primary border-transparent',
-  secondary: 'bg-secondary text-secondary-foreground border-transparent',
-  outline: 'bg-transparent border-border',
-  success: 'bg-emerald-100 text-emerald-800 border-transparent',
-  warning: 'bg-amber-100 text-amber-800 border-transparent',
-  destructive: 'bg-destructive/10 text-destructive border-transparent',
-}
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 
-type BadgeVariant = keyof typeof variants
+import { cn } from "@/lib/utils"
 
-export function Badge({
-  className,
-  variant = 'default',
-  children,
-}: {
-  className?: string
-  variant?: BadgeVariant
-  children: ReactNode
-}) {
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default:
+          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive:
+          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        outline: "text-foreground",
+        success: "border-transparent bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
+        warning: "border-transparent bg-amber-100 text-amber-800 hover:bg-amber-200",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+export interface BadgeProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+  VariantProps<typeof badgeVariants> { }
+
+function Badge({ className, variant, ...props }: BadgeProps) {
   return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
-        variants[variant],
-        className,
-      )}
-    >
-      {children}
-    </span>
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
   )
 }
+
+export { Badge, badgeVariants }

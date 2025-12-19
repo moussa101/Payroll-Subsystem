@@ -58,7 +58,7 @@ export const StatusChangeModal: React.FC<StatusChangeModalProps> = ({
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary">
+          <Button type="submit" variant="default">
             Confirm
           </Button>
         </div>

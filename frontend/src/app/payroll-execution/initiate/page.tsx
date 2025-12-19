@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { PreRunCheckList } from '@/components/payroll/PreRunCheckList';
 import { FormInput } from '@/components/ui/FormInput'; // Reusing FormInput for date/select if possible, otherwise standard select
 
@@ -14,11 +14,35 @@ const MOCK_CHECKS = [
     { id: '3', description: 'Bonus approvals completed', resolved: true },
 ];
 
+import { hasAnyRole, getToken } from '@/lib/auth';
+
+// ... (existing imports)
+
 export default function InitiationPage() {
     const router = useRouter();
     const [period, setPeriod] = useState('2025-12');
     const [checks, setChecks] = useState(MOCK_CHECKS);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isAuthorized, setIsAuthorized] = useState(false);
+
+    React.useEffect(() => {
+        const authorized = hasAnyRole([
+            'Payroll Specialist',
+            'Payroll Manager',
+            'System Admin'
+        ]);
+
+        if (!authorized) {
+            // Redirect unauthorized users
+            router.push('/payroll-execution');
+        } else {
+            setIsAuthorized(true);
+        }
+    }, [router]);
+
+    if (!isAuthorized) {
+        return null;
+    }
 
     const handleToggleCheck = (id: string, resolved: boolean) => {
         setChecks(checks.map(c => c.id === id ? { ...c, resolved } : c));
@@ -29,7 +53,7 @@ export default function InitiationPage() {
     const handleGenerateDraft = async () => {
         setIsGenerating(true);
         try {
-            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            const token = getToken();
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
             const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
@@ -74,7 +98,7 @@ export default function InitiationPage() {
 
             <div className="flex justify-end">
                 <Button
-                    variant="primary"
+                    variant="default"
                     size="lg"
                     onClick={handleGenerateDraft}
                     disabled={!allChecksResolved || isGenerating}

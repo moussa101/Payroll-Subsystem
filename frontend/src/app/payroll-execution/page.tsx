@@ -7,7 +7,7 @@ import { StatusCard } from '@/components/payroll/StatusCard';
 import { Button } from '@/components/ui/button';
 
 // Mock data for initial implementation
-type PayrollCycleStatus = 'Draft' | 'Review' | 'Approved' | 'Paid' | 'Rejected';
+import { PayrollCycleStatus } from '@/types/payroll-execution';
 
 const MOCK_DATA: {
     status: PayrollCycleStatus;
@@ -15,18 +15,23 @@ const MOCK_DATA: {
     employeeCount: number;
     totalAmount: number;
 } = {
-    status: 'Draft',
+    status: PayrollCycleStatus.DRAFT,
     cyclePeriod: 'December 2025',
     employeeCount: 142,
     totalAmount: 452000,
 };
 
+import { useRouter } from 'next/navigation';
+import { hasAnyRole, getToken } from '@/lib/auth';
+
+// ... (existing imports)
+
 export default function PayrollExecutionPage() {
-    const { status } = MOCK_DATA;
+    // ... existing setup ...
 
     const handleExecutePayment = async () => {
         try {
-            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            const token = getToken();
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
             const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
@@ -40,10 +45,11 @@ export default function PayrollExecutionPage() {
 
     const getActionLink = () => {
         switch (status) {
-            case 'Draft':
-            case 'Rejected':
+            case PayrollCycleStatus.DRAFT:
+            case PayrollCycleStatus.REJECTED:
                 return '/payroll-execution/initiate';
-            case 'Review':
+            case PayrollCycleStatus.REVIEWING_BY_MANAGER:
+            case PayrollCycleStatus.UNDER_REVIEW:
                 return '/payroll-execution/review/current';
             default:
                 return '#';
@@ -52,13 +58,15 @@ export default function PayrollExecutionPage() {
 
     const getActionLabel = () => {
         switch (status) {
-            case 'Draft':
+            case PayrollCycleStatus.DRAFT:
                 return 'Continue Initiation'; // Or Start Initiation
-            case 'Rejected':
+            case PayrollCycleStatus.REJECTED:
                 return 'Restart Initiation';
-            case 'Review':
+            case PayrollCycleStatus.REVIEWING_BY_MANAGER:
+            case PayrollCycleStatus.UNDER_REVIEW:
                 return 'Go to Review';
-            case 'Approved':
+            case PayrollCycleStatus.WAITING_FINANCE_APPROVAL:
+            case PayrollCycleStatus.PAID:
                 return 'View Summary';
             default:
                 return 'Details';
@@ -73,7 +81,7 @@ export default function PayrollExecutionPage() {
                     <p className="text-gray-500 dark:text-gray-400 mt-1">Manage and track your payroll cycles.</p>
                 </div>
                 <Link href={getActionLink()}>
-                    <Button variant="primary" size="lg">
+                    <Button variant="default" size="lg">
                         {getActionLabel()}
                     </Button>
                 </Link>

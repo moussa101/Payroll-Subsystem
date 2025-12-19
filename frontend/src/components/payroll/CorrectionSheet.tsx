@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { FormInput } from '@/components/ui/FormInput';
 import { Modal } from '@/components/ui/Modal';
 
@@ -90,7 +90,7 @@ export const CorrectionSheet: React.FC<CorrectionSheetProps> = ({ employee, isOp
 
                 <div className="flex justify-end gap-3 mt-6">
                     <Button variant="secondary" onClick={onClose}>Cancel</Button>
-                    <Button variant="primary" onClick={handleSubmit}>Save Corrections</Button>
+                    <Button variant="default" onClick={handleSubmit}>Save Corrections</Button>
                 </div>
             </div>
         </Modal>
