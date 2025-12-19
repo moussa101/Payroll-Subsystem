@@ -9,12 +9,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDateReadable } from '@/lib/format';
+import { getCurrentUser } from '@/lib/auth';
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 function PayrollPoliciesPage() {
   const [policies, setPolicies] = useState<PayrollPolicy[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const user = getCurrentUser();
+  const userRole = user?.role || '';
+  
+  // REQ-PY-1: Payroll Specialist & Manager can create/edit, Manager+ can approve/delete
+  const canCreate = ['Payroll Specialist', 'Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canApprove = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canDelete = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
 
   useEffect(() => {
     loadPolicies();
@@ -60,9 +69,11 @@ function PayrollPoliciesPage() {
               Configure company-level payroll policies and manage their approval status.
             </p>
           </div>
-          <Link href="/payroll-config/policies?create=true">
-            <Button>Create policy</Button>
-          </Link>
+          {canCreate && (
+            <Link href="/payroll-config/policies?create=true">
+              <Button>Create policy</Button>
+            </Link>
+          )}
         </div>
 
         <Card>
@@ -83,50 +94,60 @@ function PayrollPoliciesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {policies.map((policy) => (
-                  <TableRow key={policy._id}>
-                    <TableCell className="font-medium">{policy.policyName}</TableCell>
-                    <TableCell>{policy.policyType}</TableCell>
-                    <TableCell>{policy.applicability}</TableCell>
-                    <TableCell>{formatDateReadable(policy.effectiveDate)}</TableCell>
-                    <TableCell>
-                      {(() => {
-                        const map: Record<string, { label: string; variant: BadgeVariant }> = {
-                          [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
-                          [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
-                          [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
-                        };
-                        const s = map[policy.status] || { label: policy.status, variant: 'default' };
-                        return <Badge variant={s.variant}>{s.label}</Badge>;
-                      })()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Link href={`/payroll-config/policies?edit=${policy._id}`}>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={policy.status !== ConfigStatus.DRAFT}
-                          >
-                            Edit
-                          </Button>
-                        </Link>
-                        <Link href={`/payroll-config/policies?status=${policy._id}`}>
-                          <Button size="sm" variant="secondary">
-                            Change status
-                          </Button>
-                        </Link>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(policy)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {policies.map((policy) => {
+                  const status = policy.status.toLowerCase() as 'draft' | 'approved' | 'rejected';
+                  // Payroll Specialist can only edit drafts (REQ-PY-1)
+                  const canEditThis = userRole === 'Payroll Specialist' 
+                    ? (status === 'draft' && canCreate) 
+                    : (userRole === 'Payroll Manager' || userRole === 'System Admin');
+                  
+                  return (
+                    <TableRow key={policy._id}>
+                      <TableCell className="font-medium">{policy.policyName}</TableCell>
+                      <TableCell>{policy.policyType}</TableCell>
+                      <TableCell>{policy.applicability}</TableCell>
+                      <TableCell>{formatDateReadable(policy.effectiveDate)}</TableCell>
+                      <TableCell>
+                        {(() => {
+                          const map: Record<string, { label: string; variant: BadgeVariant }> = {
+                            [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
+                            [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
+                            [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
+                          };
+                          const s = map[policy.status] || { label: policy.status, variant: 'default' };
+                          return <Badge variant={s.variant}>{s.label}</Badge>;
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          {canEditThis && (
+                            <Link href={`/payroll-config/policies?edit=${policy._id}`}>
+                              <Button size="sm" variant="outline">
+                                Edit
+                              </Button>
+                            </Link>
+                          )}
+                          {canApprove && (
+                            <Link href={`/payroll-config/policies?status=${policy._id}`}>
+                              <Button size="sm" variant="secondary">
+                                Change status
+                              </Button>
+                            </Link>
+                          )}
+                          {canDelete && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDelete(policy)}
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

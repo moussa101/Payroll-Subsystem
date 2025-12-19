@@ -1,17 +1,74 @@
+'use client';
+
 import Link from 'next/link';
+import { getCurrentUser } from '@/lib/auth';
 
 export default function PayrollConfigDashboard() {
-  const configSections = [
-    { href: '/payroll-config/policies', label: 'Payroll Policies', description: 'Configure company-level payroll policies' },
-    { href: '/payroll-config/pay-grades', label: 'Pay Grades', description: 'Define pay grades, salary, and compensation limits' },
-    { href: '/payroll-config/pay-types', label: 'Pay Types', description: 'Define employee pay types (hourly, daily, weekly, monthly)' },
-    { href: '/payroll-config/allowances', label: 'Allowances', description: 'Set allowances (transportation, housing, etc)' },
-    { href: '/payroll-config/tax-rules', label: 'Tax Rules', description: 'Define tax rules and laws' },
-    { href: '/payroll-config/insurance', label: 'Insurance Brackets', description: 'Configure insurance brackets with salary ranges' },
-    { href: '/payroll-config/signing-bonuses', label: 'Signing Bonuses', description: 'Configure policies for signing bonuses' },
-    { href: '/payroll-config/termination-benefits', label: 'Termination Benefits', description: 'Configure resignation and termination benefits' },
-    { href: '/payroll-config/company-settings', label: 'Company Settings', description: 'Set company-wide settings (pay dates, time zone, currency)' },
+  const user = getCurrentUser();
+  const userRole = user?.role || '';
+
+  // Define which sections each role can access based on requirements
+  const allConfigSections = [
+    { 
+      href: '/payroll-config/policies', 
+      label: 'Payroll Policies', 
+      description: 'Configure company-level payroll policies',
+      allowedRoles: ['Payroll Specialist', 'Payroll Manager', 'HR Admin', 'HR Manager', 'System Admin']
+    },
+    { 
+      href: '/payroll-config/pay-grades', 
+      label: 'Pay Grades', 
+      description: 'Define pay grades, salary, and compensation limits',
+      allowedRoles: ['Payroll Specialist', 'Payroll Manager', 'HR Admin', 'HR Manager', 'System Admin']
+    },
+    { 
+      href: '/payroll-config/pay-types', 
+      label: 'Pay Types', 
+      description: 'Define employee pay types (hourly, daily, weekly, monthly)',
+      allowedRoles: ['Payroll Specialist', 'Payroll Manager', 'HR Admin', 'HR Manager', 'System Admin']
+    },
+    { 
+      href: '/payroll-config/allowances', 
+      label: 'Allowances', 
+      description: 'Set allowances (transportation, housing, etc)',
+      allowedRoles: ['Payroll Specialist', 'Payroll Manager', 'HR Admin', 'HR Manager', 'System Admin']
+    },
+    { 
+      href: '/payroll-config/tax-rules', 
+      label: 'Tax Rules', 
+      description: 'Define tax rules and laws',
+      allowedRoles: ['Payroll Specialist', 'Payroll Manager', 'HR Admin', 'HR Manager', 'System Admin']
+    },
+    { 
+      href: '/payroll-config/signing-bonuses', 
+      label: 'Signing Bonuses', 
+      description: 'Configure policies for signing bonuses',
+      allowedRoles: ['Payroll Specialist', 'Payroll Manager', 'HR Admin', 'HR Manager', 'System Admin']
+    },
+    { 
+      href: '/payroll-config/termination-benefits', 
+      label: 'Termination Benefits', 
+      description: 'Configure resignation and termination benefits',
+      allowedRoles: ['Payroll Specialist', 'Payroll Manager', 'HR Admin', 'HR Manager', 'System Admin']
+    },
+    { 
+      href: '/payroll-config/insurance', 
+      label: 'Insurance Brackets', 
+      description: 'Configure insurance brackets with salary ranges',
+      allowedRoles: ['HR Manager', 'System Admin', 'Payroll Manager', 'Payroll Specialist'] // All can view, but only HR Manager and System Admin can edit
+    },
+    { 
+      href: '/payroll-config/company-settings', 
+      label: 'Company Settings', 
+      description: 'Configure company-wide payroll settings',
+      allowedRoles: ['System Admin'] // REQ-PY-15: Only System Admin
+    },
   ];
+
+  // Filter sections based on user role
+  const configSections = allConfigSections.filter(section => 
+    section.allowedRoles.includes(userRole)
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

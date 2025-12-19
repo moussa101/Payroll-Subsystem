@@ -9,12 +9,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatNumber } from '@/lib/format';
+import { getCurrentUser } from '@/lib/auth';
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 export default function PayTypesPage() {
   const [payTypes, setPayTypes] = useState<PayType[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const user = getCurrentUser();
+  const userRole = user?.role || '';
+  
+  // REQ-PY-5: Payroll Specialist & Manager can create/edit, Manager+ can approve/delete
+  const canCreate = ['Payroll Specialist', 'Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canApprove = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canDelete = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
 
   useEffect(() => {
     loadPayTypes();
@@ -58,9 +67,11 @@ export default function PayTypesPage() {
             <h1 className="text-3xl font-semibold text-foreground">Pay Types</h1>
             <p className="text-muted-foreground text-sm">Manage pay type amounts and approval status.</p>
           </div>
-          <Link href="/payroll-config/pay-types?create=true">
-            <Button>Create pay type</Button>
-          </Link>
+          {canCreate && (
+            <Link href="/payroll-config/pay-types?create=true">
+              <Button>Create pay type</Button>
+            </Link>
+          )}
         </div>
 
         <Card>
@@ -79,48 +90,58 @@ export default function PayTypesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {payTypes.map((payType) => (
-                  <TableRow key={payType._id}>
-                    <TableCell className="font-medium">{payType.type}</TableCell>
-                    <TableCell>{formatNumber(payType.amount)}</TableCell>
-                    <TableCell>
-                      {(() => {
-                        const map: Record<string, { label: string; variant: BadgeVariant }> = {
-                          [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
-                          [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
-                          [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
-                        };
-                        const s = map[payType.status] || { label: payType.status, variant: 'default' };
-                        return <Badge variant={s.variant}>{s.label}</Badge>;
-                      })()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Link href={`/payroll-config/pay-types?edit=${payType._id}`}>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={payType.status !== ConfigStatus.DRAFT}
-                          >
-                            Edit
-                          </Button>
-                        </Link>
-                        <Link href={`/payroll-config/pay-types?status=${payType._id}`}>
-                          <Button size="sm" variant="secondary">
-                            Change status
-                          </Button>
-                        </Link>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(payType)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {payTypes.map((payType) => {
+                  const status = payType.status.toLowerCase() as 'draft' | 'approved' | 'rejected';
+                  // Payroll Specialist can only edit drafts (REQ-PY-5)
+                  const canEditThis = userRole === 'Payroll Specialist' 
+                    ? (status === 'draft' && canCreate) 
+                    : (userRole === 'Payroll Manager' || userRole === 'System Admin');
+                  
+                  return (
+                    <TableRow key={payType._id}>
+                      <TableCell className="font-medium">{payType.type}</TableCell>
+                      <TableCell>{formatNumber(payType.amount)}</TableCell>
+                      <TableCell>
+                        {(() => {
+                          const map: Record<string, { label: string; variant: BadgeVariant }> = {
+                            [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
+                            [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
+                            [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
+                          };
+                          const s = map[payType.status] || { label: payType.status, variant: 'default' };
+                          return <Badge variant={s.variant}>{s.label}</Badge>;
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          {canEditThis && (
+                            <Link href={`/payroll-config/pay-types?edit=${payType._id}`}>
+                              <Button size="sm" variant="outline">
+                                Edit
+                              </Button>
+                            </Link>
+                          )}
+                          {canApprove && (
+                            <Link href={`/payroll-config/pay-types?status=${payType._id}`}>
+                              <Button size="sm" variant="secondary">
+                                Change status
+                              </Button>
+                            </Link>
+                          )}
+                          {canDelete && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDelete(payType)}
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

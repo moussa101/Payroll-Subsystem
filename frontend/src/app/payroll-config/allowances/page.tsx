@@ -9,12 +9,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatNumber } from '@/lib/format';
+import { getCurrentUser } from '@/lib/auth';
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 export default function AllowancesPage() {
   const [allowances, setAllowances] = useState<Allowance[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const user = getCurrentUser();
+  const userRole = user?.role || '';
+  
+  // REQ-PY-7: Payroll Specialist & Manager can create/edit, Manager+ can approve/delete
+  const canCreate = ['Payroll Specialist', 'Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canApprove = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canDelete = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
 
   useEffect(() => {
     loadAllowances();
@@ -60,9 +69,11 @@ export default function AllowancesPage() {
               Manage recurring allowance configurations with approvals and status tracking.
             </p>
           </div>
-          <Link href="/payroll-config/allowances?create=true">
-            <Button>Create allowance</Button>
-          </Link>
+          {canCreate && (
+            <Link href="/payroll-config/allowances?create=true">
+              <Button>Create allowance</Button>
+            </Link>
+          )}
         </div>
 
         <Card>
@@ -81,7 +92,14 @@ export default function AllowancesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {allowances.map((allowance) => (
+                {allowances.map((allowance) => {
+                  const status = allowance.status.toLowerCase() as 'draft' | 'approved' | 'rejected';
+                  // Payroll Specialist can only edit drafts (REQ-PY-7)
+                  const canEditThis = userRole === 'Payroll Specialist' 
+                    ? (status === 'draft' && canCreate) 
+                    : (userRole === 'Payroll Manager' || userRole === 'System Admin');
+                  
+                  return (
                   <TableRow key={allowance._id}>
                     <TableCell className="font-medium">{allowance.name}</TableCell>
                     <TableCell>{formatNumber(allowance.amount)}</TableCell>
@@ -98,31 +116,34 @@ export default function AllowancesPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <Link href={`/payroll-config/allowances?edit=${allowance._id}`}>
+                        {canEditThis && (
+                          <Link href={`/payroll-config/allowances?edit=${allowance._id}`}>
+                            <Button size="sm" variant="outline">
+                              Edit
+                            </Button>
+                          </Link>
+                        )}
+                        {canApprove && (
+                          <Link href={`/payroll-config/allowances?status=${allowance._id}`}>
+                            <Button size="sm" variant="secondary">
+                              Change status
+                            </Button>
+                          </Link>
+                        )}
+                        {canDelete && (
                           <Button
                             size="sm"
-                            variant="outline"
-                            disabled={allowance.status !== ConfigStatus.DRAFT}
+                            variant="destructive"
+                            onClick={() => handleDelete(allowance)}
                           >
-                            Edit
+                            Delete
                           </Button>
-                        </Link>
-                        <Link href={`/payroll-config/allowances?status=${allowance._id}`}>
-                          <Button size="sm" variant="secondary">
-                            Change status
-                          </Button>
-                        </Link>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(allowance)}
-                        >
-                          Delete
-                        </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

@@ -4,7 +4,9 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { terminationBenefitsApi } from '@/app/payroll-config/client';
 import { TerminationBenefit, UpdateTerminationBenefitDto, ConfigStatus } from '@/types/payroll-config';
-import { Button, Input, Label } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 function EditTerminationBenefitForm() {
   const router = useRouter();
@@ -132,7 +134,7 @@ function EditTerminationBenefitForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={loading}>
+              <Button type="submit" variant="default" disabled={loading}>
                 Update
               </Button>
             </div>

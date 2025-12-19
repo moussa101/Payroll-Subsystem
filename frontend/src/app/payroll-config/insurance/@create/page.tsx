@@ -4,7 +4,9 @@ import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { insuranceApi } from '@/app/payroll-config/client';
 import { CreateInsuranceDto } from '@/types/payroll-config';
-import { Button, Input, Label } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 function CreateInsuranceForm() {
   const router = useRouter();
@@ -17,25 +19,23 @@ function CreateInsuranceForm() {
     employeeRate: 0,
     employerRate: 0,
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrors({});
 
     if (formData.minSalary >= formData.maxSalary) {
-      setErrors({ maxSalary: 'Max Salary must be greater than Min Salary' });
+      alert('Max Salary must be greater than Min Salary');
       return;
     }
 
     if (formData.employeeRate < 0 || formData.employeeRate > 100) {
-      setErrors({ employeeRate: 'Employee Rate must be between 0 and 100' });
+      alert('Employee Rate must be between 0 and 100');
       return;
     }
 
     if (formData.employerRate < 0 || formData.employerRate > 100) {
-      setErrors({ employerRate: 'Employer Rate must be between 0 and 100' });
+      alert('Employer Rate must be between 0 and 100');
       return;
     }
 
@@ -44,9 +44,10 @@ function CreateInsuranceForm() {
       await insuranceApi.create(formData);
       router.push('/payroll-config/insurance');
       router.refresh();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating insurance:', error);
-      alert(error.message || 'Failed to create insurance');
+      const message = error instanceof Error ? error.message : 'Failed to create insurance';
+      alert(message);
     } finally {
       setLoading(false);
     }
@@ -131,7 +132,7 @@ function CreateInsuranceForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={loading}>
+              <Button type="submit" variant="default" disabled={loading}>
                 Create
               </Button>
             </div>

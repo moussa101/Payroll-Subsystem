@@ -4,7 +4,9 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signingBonusesApi } from '@/app/payroll-config/client';
 import { SigningBonus, UpdateSigningBonusDto, ConfigStatus } from '@/types/payroll-config';
-import { Button, Input, Label } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 function EditSigningBonusForm() {
   const router = useRouter();
@@ -121,7 +123,7 @@ function EditSigningBonusForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={loading}>
+              <Button type="submit" variant="default" disabled={loading}>
                 Update
               </Button>
             </div>

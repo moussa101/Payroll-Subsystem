@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
 
 export default function Error({
   error,
@@ -40,7 +40,7 @@ export default function Error({
           {error.message || 'An unexpected error occurred while loading the payroll configuration.'}
         </p>
         <div className="flex justify-center space-x-4">
-          <Button onClick={reset} variant="primary">
+          <Button onClick={reset} variant="default">
             Try again
           </Button>
           <Button
