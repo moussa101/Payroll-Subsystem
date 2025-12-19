@@ -59,14 +59,28 @@ type RefundApi = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3000",
+  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5000",
   timeout: 10000,
 });
 
+// Helper to handle 404s gracefully
+async function fetchWithFallback<T>(endpoint: string, fallback: T): Promise<any> {
+  try {
+    const res = await api.get(endpoint);
+    return res.data;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      console.warn(`Endpoint ${endpoint} not found (404). Returning empty fallback.`);
+      return fallback;
+    }
+    throw error;
+  }
+}
+
 export async function getClaims(): Promise<ClaimRecord[]> {
   try {
-    const res = await api.get("/claims");
-    const items: ClaimApi[] = Array.isArray(res.data) ? res.data : [];
+    const data = await fetchWithFallback("/claims", []);
+    const items: ClaimApi[] = Array.isArray(data) ? data : [];
     return items.map((claim: ClaimApi): ClaimRecord => ({
       id: claim._id ?? claim.claimId ?? "N/A",
       claimId: claim.claimId ?? claim._id ?? "N/A",
@@ -89,14 +103,14 @@ export async function getClaims(): Promise<ClaimRecord[]> {
     }));
   } catch (error) {
     console.error("Failed to fetch claims", error);
-    throw error;
+    return [];
   }
 }
 
 export async function getDisputes(): Promise<DisputeRecord[]> {
   try {
-    const res = await api.get("/disputes");
-    const items: DisputeApi[] = Array.isArray(res.data) ? res.data : [];
+    const data = await fetchWithFallback("/disputes", []);
+    const items: DisputeApi[] = Array.isArray(data) ? data : [];
     return items.map((dispute: DisputeApi): DisputeRecord => ({
       id: dispute._id ?? dispute.disputeId ?? "N/A",
       disputeId: dispute.disputeId ?? dispute._id ?? "N/A",
@@ -116,7 +130,7 @@ export async function getDisputes(): Promise<DisputeRecord[]> {
     }));
   } catch (error) {
     console.error("Failed to fetch disputes", error);
-    throw error;
+    return [];
   }
 }
 
@@ -138,8 +152,8 @@ export async function rejectDispute(id: string, rejectionReason?: string) {
 
 export async function getRefunds(): Promise<RefundRecord[]> {
   try {
-    const res = await api.get("/refunds");
-    const items: RefundApi[] = Array.isArray(res.data) ? res.data : [];
+    const data = await fetchWithFallback("/refunds", []);
+    const items: RefundApi[] = Array.isArray(data) ? data : [];
     return items.map((refund: RefundApi): RefundRecord => {
       const hasClaim = Boolean(refund.claimId);
       const hasDispute = Boolean(refund.disputeId);
@@ -148,8 +162,8 @@ export async function getRefunds(): Promise<RefundRecord[]> {
         reference: hasClaim
           ? refToLabel(refund.claimId, "claimId") ?? "Claim"
           : hasDispute
-          ? refToLabel(refund.disputeId, "disputeId") ?? "Dispute"
-          : "Unlinked",
+            ? refToLabel(refund.disputeId, "disputeId") ?? "Dispute"
+            : "Unlinked",
         referenceType: hasClaim ? "Claim" : "Dispute",
         reason: refund.refundDetails?.description ?? "Refund",
         amount: Number(refund.refundDetails?.amount ?? refund.amount ?? 0),
@@ -162,7 +176,7 @@ export async function getRefunds(): Promise<RefundRecord[]> {
     });
   } catch (error) {
     console.error("Failed to fetch refunds", error);
-    throw error;
+    return [];
   }
 }
 

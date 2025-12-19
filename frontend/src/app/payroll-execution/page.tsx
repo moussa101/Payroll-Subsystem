@@ -4,7 +4,7 @@ import React from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import { StatusCard } from '@/components/payroll/StatusCard';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 
 // Mock data for initial implementation
 type PayrollCycleStatus = 'Draft' | 'Review' | 'Approved' | 'Paid' | 'Rejected';
