@@ -1,13 +1,10 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Req } from '@nestjs/common';
 import { PayrollConfigurationService } from './payroll-configuration.service';
 import { Request } from 'express';
-import { Types } from 'mongoose';
 
 // --- Auth Imports ---
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Adjust path if needed based on your structure
-import { RolesGuard } from '../auth/guards/roles.guard'; // Adjust path if needed
-import { Roles, Public } from '../auth/decorators/roles.decorators';
-import { UserRole } from '../auth/permissions.constant';
+import { Permissions } from '../auth/decorators/roles.decorators';
+import { Permission } from '../auth/permissions.constant';
 import { AuthUser } from '../auth/auth-user.interface';
 
 // --- DTOs (Create & Update) ---
@@ -41,43 +38,27 @@ import { UpdateTerminationBenefitsDto } from './dto/update-termination-benefits.
 import { ChangeStatusDto } from './dto/change-status.dto';
 
 @Controller('payroll-config')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class PayrollConfigurationController {
   constructor(private readonly configService: PayrollConfigurationService) {}
-
-  // Mock user for testing when endpoints are public
-  private getMockUser(): AuthUser {
-    // Use a valid MongoDB ObjectId for testing (consistent for all test operations)
-    // This is a valid 24-character hex string ObjectId
-    // Changed to SYSTEM_ADMIN for full testing access
-    return {
-      userId: '507f1f77bcf86cd799439011', // Valid ObjectId string for testing
-      email: 'admin@example.com',
-      role: UserRole.SYSTEM_ADMIN, // Admin role for full access to all features
-    };
-  }
 
   // ===========================================================================
   // 1. Company Wide Settings
   // ===========================================================================
   
   @Post('settings')
-  // @Roles(UserRole.SYSTEM_ADMIN, UserRole.PAYROLL_MANAGER) // TODO: Restore after testing
-  @Public() // Make public for testing - remove this in production
+  @Permissions(Permission.MANAGE_PAYROLL)
   createSettings(@Body() dto: CreateCompanySettingsDto) { 
     return this.configService.createSettings(dto); 
   }
 
   @Put('settings')
-  // @Roles(UserRole.SYSTEM_ADMIN, UserRole.PAYROLL_MANAGER) // TODO: Restore after testing
-  @Public() // Make public for testing - remove this in production
+  @Permissions(Permission.MANAGE_PAYROLL)
   updateSettings(@Body() dto: UpdateCompanySettingsDto) { 
     return this.configService.updateSettings(dto); 
   }
   
   @Get('settings')
-  // @Roles(UserRole.SYSTEM_ADMIN, UserRole.PAYROLL_MANAGER, UserRole.HR_MANAGER) // TODO: Restore after testing
-  @Public() // Make public for testing - remove this in production
+  @Permissions(Permission.MANAGE_PAYROLL, Permission.APPROVE_PAYROLL)
   getSettings() { return this.configService.getSettings(); }
 
 
@@ -86,35 +67,30 @@ export class PayrollConfigurationController {
   // ===========================================================================
 
   @Post('pay-grades')
-  @Public() // Make public for testing - remove this in production
-  createPayGrade(@Body() dto: CreatePayGradeDto) {
-    return this.configService.createPayGrade(dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL, Permission.MANAGE_ALL_PROFILES)
+  createPayGrade(@Body() dto: CreatePayGradeDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.createPayGrade(dto, req.user);
   }
   
   @Put('pay-grades/:id')
-  @Public() // Make public for testing - remove this in production
-  updatePayGrade(@Param('id') id: string, @Body() dto: UpdatePayGradeDto) {
-    return this.configService.updatePayGrade(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL, Permission.MANAGE_ALL_PROFILES)
+  updatePayGrade(@Param('id') id: string, @Body() dto: UpdatePayGradeDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.updatePayGrade(id, dto, req.user);
   }
 
   @Get('pay-grades')
-  @Public() // Make public for testing - remove this in production
   getPayGrades() { return this.configService.getPayGrades(); }
-
-  @Get('pay-grades/:id')
-  @Public() // Make public for testing - remove this in production
-  getPayGradeById(@Param('id') id: string) { return this.configService.getPayGradeById(id); }
   
   @Patch('pay-grades/:id/status')
-  @Public() // Make public for testing - remove this in production
-  changePayGradeStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto) {
-    return this.configService.changePayGradeStatus(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL, Permission.APPROVE_PAYROLL)
+  changePayGradeStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.changePayGradeStatus(id, dto, req.user);
   }
 
   @Delete('pay-grades/:id')
-  @Public() // Make public for testing - remove this in production
-  deletePayGrade(@Param('id') id: string) {
-    return this.configService.deletePayGrade(id, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  deletePayGrade(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deletePayGrade(id, req.user);
   }
 
 
@@ -123,45 +99,30 @@ export class PayrollConfigurationController {
   // ===========================================================================
 
   @Post('policies')
-  @Public() // Make public for testing - remove this in production
-  async createPayrollPolicy(@Body() dto: CreatePayrollPoliciesDto) {
-    try {
-      console.log('Received createPayrollPolicy request:', JSON.stringify(dto, null, 2));
-      const result = await this.configService.createPayrollPolicy(dto, this.getMockUser());
-      console.log('Successfully created payroll policy:', (result as any)._id);
-      return result;
-    } catch (error: any) {
-      console.error('Error in createPayrollPolicy controller:', error);
-      console.error('Error stack:', error.stack);
-      console.error('Error message:', error.message);
-      throw error;
-    }
+  @Permissions(Permission.MANAGE_PAYROLL)
+  createPayrollPolicy(@Body() dto: CreatePayrollPoliciesDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.createPayrollPolicy(dto, req.user);
   }
 
   @Put('policies/:id')
-  @Public() // Make public for testing - remove this in production
-  updatePayrollPolicy(@Param('id') id: string, @Body() dto: UpdatePayrollPoliciesDto) {
-    return this.configService.updatePayrollPolicy(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  updatePayrollPolicy(@Param('id') id: string, @Body() dto: UpdatePayrollPoliciesDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.updatePayrollPolicy(id, dto, req.user);
   }
 
   @Get('policies')
-  @Public() // Make public for testing - remove this in production
   getPayrollPolicies() { return this.configService.getPayrollPolicies(); }
-
-  @Get('policies/:id')
-  @Public() // Make public for testing - remove this in production
-  getPayrollPolicyById(@Param('id') id: string) { return this.configService.getPayrollPolicyById(id); }
   
   @Patch('policies/:id/status')
-  @Public() // Make public for testing - remove this in production
-  changePayrollPolicyStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto) {
-    return this.configService.changePayrollPolicyStatus(id, dto, this.getMockUser());
+  @Permissions(Permission.APPROVE_PAYROLL) // Higher approval for core policies
+  changePayrollPolicyStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.changePayrollPolicyStatus(id, dto, req.user);
   }
 
   @Delete('policies/:id')
-  @Public() // Make public for testing - remove this in production
-  deletePayrollPolicy(@Param('id') id: string) {
-    return this.configService.deletePayrollPolicy(id, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  deletePayrollPolicy(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deletePayrollPolicy(id, req.user);
   }
 
   // ===========================================================================
@@ -169,35 +130,30 @@ export class PayrollConfigurationController {
   // ===========================================================================
 
   @Post('tax-rules')
-  @Public() // Make public for testing - remove this in production
-  createTaxRule(@Body() dto: CreateTaxRuleDto) {
-    return this.configService.createTaxRule(dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  createTaxRule(@Body() dto: CreateTaxRuleDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.createTaxRule(dto, req.user);
   }
 
   @Put('tax-rules/:id')
-  @Public() // Make public for testing - remove this in production
-  updateTaxRule(@Param('id') id: string, @Body() dto: UpdateTaxRuleDto) {
-    return this.configService.updateTaxRule(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  updateTaxRule(@Param('id') id: string, @Body() dto: UpdateTaxRuleDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.updateTaxRule(id, dto, req.user);
   }
 
   @Get('tax-rules')
-  @Public() // Make public for testing - remove this in production
   getTaxRules() { return this.configService.getTaxRules(); }
 
-  @Get('tax-rules/:id')
-  @Public() // Make public for testing - remove this in production
-  getTaxRuleById(@Param('id') id: string) { return this.configService.getTaxRuleById(id); }
-
   @Patch('tax-rules/:id/status')
-  @Public() // Make public for testing - remove this in production
-  changeTaxStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto) {
-    return this.configService.approveTaxRule(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  changeTaxStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.approveTaxRule(id, dto, req.user);
   }
 
   @Delete('tax-rules/:id')
-  @Public() // Make public for testing - remove this in production
-  deleteTaxRule(@Param('id') id: string) {
-    return this.configService.deleteTaxRule(id, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  deleteTaxRule(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deleteTaxRule(id, req.user);
   }
 
   // ===========================================================================
@@ -205,35 +161,24 @@ export class PayrollConfigurationController {
   // ===========================================================================
 
   @Post('insurance')
-  @Public() // Make public for testing - remove this in production
-  createInsurance(@Body() dto: CreateInsuranceDto) {
-    return this.configService.createInsurance(dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  createInsurance(@Body() dto: CreateInsuranceDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.createInsurance(dto, req.user);
   }
 
   @Put('insurance/:id')
-  @Public() // Make public for testing - remove this in production
-  updateInsurance(@Param('id') id: string, @Body() dto: UpdateInsuranceDto) {
-    return this.configService.updateInsurance(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  updateInsurance(@Param('id') id: string, @Body() dto: UpdateInsuranceDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.updateInsurance(id, dto, req.user);
   }
 
   @Get('insurance')
-  @Public() // Make public for testing - remove this in production
   getInsurance() { return this.configService.getInsuranceBrackets(); }
 
-  @Get('insurance/:id')
-  @Public() // Make public for testing - remove this in production
-  getInsuranceById(@Param('id') id: string) { return this.configService.getInsuranceById(id); }
-
   @Patch('insurance/:id/status')
-  @Public() // Make public for testing - remove this in production
-  changeInsuranceStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto) {
-    return this.configService.approveInsurance(id, dto, this.getMockUser());
-  }
-
-  @Delete('insurance/:id')
-  @Public() // Make public for testing - remove this in production
-  deleteInsurance(@Param('id') id: string) {
-    return this.configService.deleteInsurance(id, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  changeInsuranceStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.approveInsurance(id, dto, req.user);
   }
 
 
@@ -242,35 +187,30 @@ export class PayrollConfigurationController {
   // ===========================================================================
 
   @Post('allowances')
-  @Public() // Make public for testing - remove this in production
-  createAllowance(@Body() dto: CreateAllowanceDto) {
-    return this.configService.createAllowance(dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  createAllowance(@Body() dto: CreateAllowanceDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.createAllowance(dto, req.user);
   }
   
   @Put('allowances/:id')
-  @Public() // Make public for testing - remove this in production
-  updateAllowance(@Param('id') id: string, @Body() dto: UpdateAllowanceDto) {
-    return this.configService.updateAllowance(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  updateAllowance(@Param('id') id: string, @Body() dto: UpdateAllowanceDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.updateAllowance(id, dto, req.user);
   }
 
   @Get('allowances')
-  @Public() // Make public for testing - remove this in production
   getAllowances() { return this.configService.getAllowances(); }
 
-  @Get('allowances/:id')
-  @Public() // Make public for testing - remove this in production
-  getAllowanceById(@Param('id') id: string) { return this.configService.getAllowanceById(id); }
-
   @Patch('allowances/:id/status')
-  @Public() // Make public for testing - remove this in production
-  changeAllowanceStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto) {
-    return this.configService.approveAllowance(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  changeAllowanceStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.approveAllowance(id, dto, req.user);
   }
 
   @Delete('allowances/:id')
-  @Public() // Make public for testing - remove this in production
-  deleteAllowance(@Param('id') id: string) {
-    return this.configService.deleteAllowance(id, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  deleteAllowance(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deleteAllowance(id, req.user);
   }
 
   // ===========================================================================
@@ -278,35 +218,30 @@ export class PayrollConfigurationController {
   // ===========================================================================
 
   @Post('pay-types')
-  @Public() // Make public for testing - remove this in production
-  createPayType(@Body() dto: CreatePayTypeDto) {
-    return this.configService.createPayType(dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  createPayType(@Body() dto: CreatePayTypeDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.createPayType(dto, req.user);
   }
 
   @Put('pay-types/:id')
-  @Public() // Make public for testing - remove this in production
-  updatePayType(@Param('id') id: string, @Body() dto: UpdatePayTypeDto) {
-    return this.configService.updatePayType(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  updatePayType(@Param('id') id: string, @Body() dto: UpdatePayTypeDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.updatePayType(id, dto, req.user);
   }
 
   @Get('pay-types')
-  @Public() // Make public for testing - remove this in production
   getPayTypes() { return this.configService.getPayTypes(); }
 
-  @Get('pay-types/:id')
-  @Public() // Make public for testing - remove this in production
-  getPayTypeById(@Param('id') id: string) { return this.configService.getPayTypeById(id); }
-
   @Patch('pay-types/:id/status')
-  @Public() // Make public for testing - remove this in production
-  changePayTypeStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto) {
-    return this.configService.approvePayType(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  changePayTypeStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.approvePayType(id, dto, req.user);
   }
 
   @Delete('pay-types/:id')
-  @Public() // Make public for testing - remove this in production
-  deletePayType(@Param('id') id: string) {
-    return this.configService.deletePayType(id, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  deletePayType(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deletePayType(id, req.user);
   }
 
   // ===========================================================================
@@ -314,35 +249,30 @@ export class PayrollConfigurationController {
   // ===========================================================================
 
   @Post('signing-bonuses')
-  @Public() // Make public for testing - remove this in production
-  createSigningBonus(@Body() dto: CreateSigningBonusDto) {
-    return this.configService.createSigningBonus(dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL, Permission.MANAGE_RECRUITMENT)
+  createSigningBonus(@Body() dto: CreateSigningBonusDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.createSigningBonus(dto, req.user);
   }
 
   @Put('signing-bonuses/:id')
-  @Public() // Make public for testing - remove this in production
-  updateSigningBonus(@Param('id') id: string, @Body() dto: UpdateSigningBonusDto) {
-    return this.configService.updateSigningBonus(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  updateSigningBonus(@Param('id') id: string, @Body() dto: UpdateSigningBonusDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.updateSigningBonus(id, dto, req.user);
   }
 
   @Get('signing-bonuses')
-  @Public() // Make public for testing - remove this in production
   getSigningBonuses() { return this.configService.getSigningBonuses(); }
 
-  @Get('signing-bonuses/:id')
-  @Public() // Make public for testing - remove this in production
-  getSigningBonusById(@Param('id') id: string) { return this.configService.getSigningBonusById(id); }
-
   @Patch('signing-bonuses/:id/status')
-  @Public() // Make public for testing - remove this in production
-  changeBonusStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto) {
-    return this.configService.approveSigningBonus(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  changeBonusStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.approveSigningBonus(id, dto, req.user);
   }
 
   @Delete('signing-bonuses/:id')
-  @Public() // Make public for testing - remove this in production
-  deleteSigningBonus(@Param('id') id: string) {
-    return this.configService.deleteSigningBonus(id, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  deleteSigningBonus(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deleteSigningBonus(id, req.user);
   }
 
   // ===========================================================================
@@ -350,34 +280,29 @@ export class PayrollConfigurationController {
   // ===========================================================================
 
   @Post('termination-benefits')
-  @Public() // Make public for testing - remove this in production
-  createTermination(@Body() dto: CreateTerminationBenefitsDto) {
-    return this.configService.createTerminationBenefit(dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  createTermination(@Body() dto: CreateTerminationBenefitsDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.createTerminationBenefit(dto, req.user);
   }
 
   @Put('termination-benefits/:id')
-  @Public() // Make public for testing - remove this in production
-  updateTermination(@Param('id') id: string, @Body() dto: UpdateTerminationBenefitsDto) {
-    return this.configService.updateTerminationBenefit(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  updateTermination(@Param('id') id: string, @Body() dto: UpdateTerminationBenefitsDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.updateTerminationBenefit(id, dto, req.user);
   }
 
   @Get('termination-benefits')
-  @Public() // Make public for testing - remove this in production
   getTerminationBenefits() { return this.configService.getTerminationBenefits(); }
-
-  @Get('termination-benefits/:id')
-  @Public() // Make public for testing - remove this in production
-  getTerminationBenefitById(@Param('id') id: string) { return this.configService.getTerminationBenefitById(id); }
   
   @Patch('termination-benefits/:id/status')
-  @Public() // Make public for testing - remove this in production
-  changeTermStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto) {
-    return this.configService.approveTerminationBenefit(id, dto, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  changeTermStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.approveTerminationBenefit(id, dto, req.user);
   }
 
   @Delete('termination-benefits/:id')
-  @Public() // Make public for testing - remove this in production
-  deleteTerminationBenefit(@Param('id') id: string) {
-    return this.configService.deleteTerminationBenefit(id, this.getMockUser());
+  @Permissions(Permission.MANAGE_PAYROLL)
+  deleteTerminationBenefit(@Param('id') id: string, @Req() req: Request & { user: AuthUser }) {
+    return this.configService.deleteTerminationBenefit(id, req.user);
   }
 }

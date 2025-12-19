@@ -6,7 +6,7 @@ import { latenessRuleSchema } from './models/lateness-rule.schema';
 import { OvertimeRuleSchema } from './models/overtime-rule.schema';
 import { ScheduleRuleSchema } from './models/schedule-rule.schema';
 import { ShiftAssignmentSchema } from './models/shift-assignment.schema';
-import { PunchPolicy, HolidayType, ShiftAssignmentStatus } from './models/enums';
+import { PunchPolicy, HolidayType, ShiftAssignmentStatus } from './models/enums/index';
 
 export async function seedTimeManagement(connection: mongoose.Connection, employees: any, departments: any, positions: any) {
   const ShiftTypeModel = connection.model('ShiftType', ShiftTypeSchema);
