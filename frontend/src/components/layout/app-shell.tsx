@@ -107,6 +107,15 @@ const navSections: NavSection[] = [
     requiredRoles: ["department head"], // ← only this role
   },
   {
+    label: "Payroll Execution",
+    items: [
+      { href: "/payroll-execution", label: "Dashboard" },
+      { href: "/payroll-execution/initiate", label: "Initiate Cycle" },
+      { href: "/payroll-execution/review/current", label: "Review Cycle" },
+    ],
+    requiredRoles: payrollConfigRoles,
+  },
+  {
     label: "Payroll Config",
     items: [
       { href: "/payroll-config", label: "Dashboard" },
