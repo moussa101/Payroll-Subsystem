@@ -3,17 +3,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { notFound } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
 import { PayrollTable, EmployeePayroll } from '@/components/payroll/PayrollTable';
 import { CorrectionSheet, CorrectionData } from '@/components/payroll/CorrectionSheet';
 import Link from 'next/link';
-
-// Mock Data
-const MOCK_EMPLOYEES: EmployeePayroll[] = [
-    { id: '1', name: 'Alice Johnson', role: 'Software Engineer', grossPay: 5000, taxes: 1000, deductions: 200, netPay: 3800, hasByAnomaly: false, status: 'Ready' },
-    { id: '2', name: 'Bob Smith', role: 'Product Manager', grossPay: 6000, taxes: 1200, deductions: 300, netPay: 4500, hasByAnomaly: true, anomalyMessage: 'Net pay variance > 10%', status: 'Flagged' },
-    { id: '3', name: 'Charlie Brown', role: 'Designer', grossPay: 4000, taxes: 800, deductions: 100, netPay: 3100, hasByAnomaly: false, status: 'Ready' },
-];
 
 export default function ReviewPage({ params }: { params: { cycleId: string } }) {
 
@@ -32,8 +24,8 @@ export default function ReviewPage({ params }: { params: { cycleId: string } }) 
             setEmployees(response.data);
         } catch (error) {
             console.error('Failed to fetch draft entries:', error);
-            // Fallback to mock data if API fails for demo purposes, or handle error appropriately
-            setEmployees(MOCK_EMPLOYEES);
+            // Handle error appropriately
+            setEmployees([]);
         } finally {
             setLoading(false);
         }
@@ -97,36 +89,46 @@ export default function ReviewPage({ params }: { params: { cycleId: string } }) 
     const hasErrors = employees.some(e => e.hasByAnomaly);
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="mb-8 flex justify-between items-end">
+        <div className="max-w-6xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
                 <div>
-                    <Link href="/payroll-execution" className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-2 inline-block">
-                        &larr; Back to Dashboard
+                    <Link href="/payroll-execution" className="text-sm font-medium text-gray-500 hover:text-gray-900 mb-4 inline-flex items-center transition-colors">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+                        Back to Dashboard
                     </Link>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Review Payroll Draft</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Cycle ID: {Math.floor(Math.random() * 1000)} {/* Just a placeholder for cycleId param */}</p>
+                    <h1 className="text-2xl font-bold text-gray-900 mt-2">Review Payroll Draft</h1>
+                    <p className="text-gray-500 mt-1">Review employee payslips and correct anomalies.</p>
                 </div>
-                <div>
-                    <Button variant="primary" disabled={hasErrors} onClick={handlePublish}>
-                        Publish for Manager Review
-                    </Button>
+                <div className="flex gap-3">
+                    <button 
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-all"
+                    >
+                        Export Report
+                    </button>
+                    <button 
+                        onClick={handlePublish}
+                        disabled={hasErrors}
+                        className={`px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm transition-all
+                            ${hasErrors 
+                                ? 'bg-gray-300 cursor-not-allowed' 
+                                : 'bg-[#0B1120] hover:bg-gray-800 hover:shadow-md'
+                            }`}
+                    >
+                        Publish for Approval
+                    </button>
                 </div>
             </div>
 
             {hasErrors && (
-                <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 mb-6 rounded-r">
-                    <div className="flex">
-                        <div className="flex-shrink-0">
-                            <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="ml-3">
-                            <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Attention needed</h3>
-                            <div className="mt-2 text-sm text-red-700 dark:text-red-300">
-                                <p>There are employees with detected anomalies. Please review and correct them before publishing.</p>
-                            </div>
-                        </div>
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start">
+                    <svg className="h-5 w-5 text-red-400 mt-0.5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                        <h3 className="text-sm font-medium text-red-800">Attention Needed</h3>
+                        <p className="text-sm text-red-700 mt-1">
+                            There are flagged entries that require correction before you can publish this payroll run.
+                        </p>
                     </div>
                 </div>
             )}
