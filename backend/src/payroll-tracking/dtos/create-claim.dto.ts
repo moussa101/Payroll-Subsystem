@@ -16,8 +16,8 @@ export class CreateClaimDto {
   claimType: string; // e.g. "medical"
 
   @IsMongoId()
-  @IsNotEmpty()
-  employeeId: string; // ObjectId as string
+  @IsOptional()
+  employeeId?: string; // ObjectId as string, derived from logged-in user
 
   @IsMongoId()
   @IsOptional()

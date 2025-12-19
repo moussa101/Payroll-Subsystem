@@ -15,19 +15,24 @@ import {
   payrollRuns,
   payrollRunsSchema,
 } from '../payroll-execution/models/payrollRuns.schema';
+import { ClaimsController } from './controllers/claims.controller';
+import { DisputesController } from './controllers/disputes.controller';
+import { RefundsController } from './controllers/refunds.controller';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
 
   imports: [
     PayrollConfigurationModule,
     forwardRef(() => PayrollExecutionModule),
+    AuthModule,
     MongooseModule.forFeature([
       { name: refunds.name, schema: refundsSchema },
       { name: claims.name, schema: claimsSchema },
       { name: disputes.name, schema: disputesSchema },
       { name: payrollRuns.name, schema: payrollRunsSchema },
     ])],
-  controllers: [PayrollTrackingController, TaxController],
+  controllers: [PayrollTrackingController, TaxController, ClaimsController, DisputesController, RefundsController],
   providers: [PayrollTrackingService, RefundsService, ClaimsService, DisputesService],
   exports:[PayrollTrackingService]
 })

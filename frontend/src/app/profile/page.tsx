@@ -122,7 +122,7 @@ export default function ProfilePage() {
   const apiBase =
     process.env.NEXT_PUBLIC_API_URL ??
     process.env.NEXT_PUBLIC_BACKEND_URL ??
-    "http://localhost:5000";
+    "http://localhost:4000";
 
   const photoSrc = useMemo(() => {
     const url =
