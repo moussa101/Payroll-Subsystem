@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { FormInput } from '@/components/ui/FormInput';
-import { Modal } from '@/components/ui/Modal';
 
 // Correction Interface
 export interface CorrectionData {
@@ -22,77 +20,132 @@ interface CorrectionSheetProps {
     onSave: (data: CorrectionData) => void;
 }
 
-export const CorrectionSheet: React.FC<CorrectionSheetProps> = ({ employee, isOpen, onClose, onSave }) => {
+export const CorrectionSheet: React.FC<CorrectionSheetProps> = ({
+    employee,
+    isOpen,
+    onClose,
+    onSave
+}) => {
     const [formData, setFormData] = React.useState<CorrectionData | null>(null);
+    const [inputValues, setInputValues] = React.useState({
+        grossPay: '',
+        taxes: '',
+        deductions: ''
+    });
 
     React.useEffect(() => {
         if (employee) {
             setFormData({ ...employee });
+            setInputValues({
+                grossPay: employee.grossPay.toString(),
+                taxes: employee.taxes.toString(),
+                deductions: employee.deductions.toString()
+            });
         }
     }, [employee]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!formData) return;
+
         const { name, value } = e.target;
-        setFormData(prev => prev ? ({ ...prev, [name]: parseFloat(value) || 0 }) : null);
+        setInputValues(prev => ({ ...prev, [name]: value }));
+
+        const num = parseFloat(value);
+        setFormData(prev =>
+            prev
+                ? { ...prev, [name]: isNaN(num) ? 0 : num }
+                : null
+        );
     };
 
-    // Auto-calculate Net Pay
     React.useEffect(() => {
-        if (formData) {
-            const net = formData.grossPay - formData.taxes - formData.deductions;
-            setFormData(prev => prev ? ({ ...prev, netPay: net }) : null);
+        if (!formData) return;
+
+        const net = formData.grossPay - formData.taxes - formData.deductions;
+        if (net !== formData.netPay) {
+            setFormData(prev => (prev ? { ...prev, netPay: net } : null));
         }
     }, [formData?.grossPay, formData?.taxes, formData?.deductions]);
 
     const handleSubmit = () => {
-        if (formData) {
-            onSave(formData);
-        }
+        if (formData) onSave(formData);
     };
 
-    if (!employee || !formData) return null;
+    if (!employee || !formData || !isOpen) return null;
 
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={onClose}
-            title={`Correct Payroll for ${employee.employeeName}`}
-        >
-            <div className="space-y-4">
-                <FormInput
-                    label="Gross Pay"
-                    type="number"
-                    name="grossPay"
-                    value={formData.grossPay}
-                    onChange={handleChange}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                    <FormInput
-                        label="Taxes"
-                        type="number"
-                        name="taxes"
-                        value={formData.taxes}
-                        onChange={handleChange}
-                    />
-                    <FormInput
-                        label="Deductions"
-                        type="number"
-                        name="deductions"
-                        value={formData.deductions}
-                        onChange={handleChange}
-                    />
-                </div>
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Net Pay (Calculated)</label>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">${formData.netPay.toFixed(2)}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                        Correct Payroll
+                    </h3>
+                    <button onClick={onClose} aria-label="Close">
+                        ✕
+                    </button>
                 </div>
 
-                <div className="flex justify-end gap-3 mt-6">
-                    <Button variant="secondary" onClick={onClose}>Cancel</Button>
-                    <Button variant="default" onClick={handleSubmit}>Save Corrections</Button>
+                <div className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium">
+                            Gross Pay
+                        </label>
+                        <input
+                            type="number"
+                            name="grossPay"
+                            value={inputValues.grossPay}
+                            onChange={handleChange}
+                            className="w-full border rounded px-3 py-2"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium">
+                                Taxes
+                            </label>
+                            <input
+                                type="number"
+                                name="taxes"
+                                value={inputValues.taxes}
+                                onChange={handleChange}
+                                className="w-full border rounded px-3 py-2"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium">
+                                Deductions
+                            </label>
+                            <input
+                                type="number"
+                                name="deductions"
+                                value={inputValues.deductions}
+                                onChange={handleChange}
+                                className="w-full border rounded px-3 py-2"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="pt-4 border-t">
+                        <label className="text-sm text-gray-500">
+                            Net Pay (Calculated)
+                        </label>
+                        <p className="text-2xl font-bold">
+                            ${formData.netPay.toFixed(2)}
+                        </p>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button variant="secondary" onClick={onClose}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSubmit}>
+                            Save Corrections
+                        </Button>
+                    </div>
                 </div>
             </div>
-        </Modal>
+        </div>
     );
 };

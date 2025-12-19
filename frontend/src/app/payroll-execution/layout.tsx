@@ -1,4 +1,6 @@
+import React from 'react';
 import { PayrollProvider } from '@/context/PayrollContext';
+import { AppShell } from '@/components/layout/app-shell';
 
 export default function PayrollExecutionLayout({
     children,
@@ -7,13 +9,9 @@ export default function PayrollExecutionLayout({
 }) {
     return (
         <PayrollProvider>
-            <div className="p-6">
-                <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Payroll Execution</h1>
-                    <p className="text-gray-600">Manage and process payroll cycles</p>
-                </header>
+            <AppShell title="Payroll Execution" subtitle="Manage and process payroll cycles">
                 {children}
-            </div>
+            </AppShell>
         </PayrollProvider>
     );
 }
