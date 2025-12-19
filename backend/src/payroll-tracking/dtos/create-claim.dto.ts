@@ -2,6 +2,24 @@ import { IsString, IsNotEmpty, IsOptional, IsEnum, IsMongoId, IsNumber } from 'c
 import { Type } from 'class-transformer';
 import { ClaimStatus } from '../enums/payroll-tracking-enum';
 
+class ExpenseDetailsDto {
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @IsString()
+  @IsOptional()
+  merchant?: string;
+
+  @IsString()
+  @IsOptional()
+  incurredAt?: string;
+
+  @IsString({ each: true })
+  @IsOptional()
+  receipts?: string[];
+}
+
 export class CreateClaimDto {
   @IsString()
   @IsNotEmpty()
@@ -16,8 +34,8 @@ export class CreateClaimDto {
   claimType: string; // e.g. "medical"
 
   @IsMongoId()
-  @IsNotEmpty()
-  employeeId: string; // ObjectId as string
+  @IsOptional()
+  employeeId?: string; // ObjectId as string, derived from logged-in user
 
   @IsMongoId()
   @IsOptional()
@@ -44,4 +62,8 @@ export class CreateClaimDto {
   @IsString()
   @IsOptional()
   resolutionComment?: string;
+
+  @IsOptional()
+  @Type(() => ExpenseDetailsDto)
+  expenseDetails?: ExpenseDetailsDto;
 }

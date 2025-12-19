@@ -9,12 +9,19 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatNumber } from '@/lib/format';
+import { getCurrentUser } from '@/lib/auth';
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 export default function InsurancePage() {
   const [insuranceBrackets, setInsuranceBrackets] = useState<InsuranceBracket[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const user = getCurrentUser();
+  const userRole = user?.role || '';
+
+  // REQ-PY-22: Only HR Manager and System Admin can edit/approve/delete insurance
+  const canManageInsurance = userRole === 'HR Manager' || userRole === 'System Admin';
 
   useEffect(() => {
     loadInsuranceBrackets();
@@ -58,9 +65,11 @@ export default function InsurancePage() {
             <h1 className="text-3xl font-semibold text-foreground">Insurance Brackets</h1>
             <p className="text-muted-foreground text-sm">Bracket salary ranges and contribution rates.</p>
           </div>
-          <Link href="/payroll-config/insurance?create=true">
-            <Button>Create insurance bracket</Button>
-          </Link>
+          {canManageInsurance && (
+            <Link href="/payroll-config/insurance?create=true">
+              <Button>Create insurance bracket</Button>
+            </Link>
+          )}
         </div>
 
         <Card>
@@ -82,51 +91,55 @@ export default function InsurancePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {insuranceBrackets.map((insurance) => (
-                  <TableRow key={insurance._id}>
-                    <TableCell className="font-medium">{insurance.name}</TableCell>
-                    <TableCell>{formatNumber(insurance.minSalary)}</TableCell>
-                    <TableCell>{formatNumber(insurance.maxSalary)}</TableCell>
-                    <TableCell>{insurance.employeeRate}%</TableCell>
-                    <TableCell>{insurance.employerRate}%</TableCell>
-                    <TableCell>
-                      {(() => {
-                        const map: Record<string, { label: string; variant: BadgeVariant }> = {
-                          [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
-                          [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
-                          [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
-                        };
-                        const s = map[insurance.status] || { label: insurance.status, variant: 'default' };
-                        return <Badge variant={s.variant}>{s.label}</Badge>;
-                      })()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Link href={`/payroll-config/insurance?edit=${insurance._id}`}>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={insurance.status !== ConfigStatus.DRAFT}
-                          >
-                            Edit
-                          </Button>
-                        </Link>
-                        <Link href={`/payroll-config/insurance?status=${insurance._id}`}>
-                          <Button size="sm" variant="secondary">
-                            Change status
-                          </Button>
-                        </Link>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(insurance)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {insuranceBrackets.map((insurance) => {
+                  return (
+                    <TableRow key={insurance._id}>
+                      <TableCell className="font-medium">{insurance.name}</TableCell>
+                      <TableCell>{formatNumber(insurance.minSalary)}</TableCell>
+                      <TableCell>{formatNumber(insurance.maxSalary)}</TableCell>
+                      <TableCell>{insurance.employeeRate}%</TableCell>
+                      <TableCell>{insurance.employerRate}%</TableCell>
+                      <TableCell>
+                        {(() => {
+                          const map: Record<string, { label: string; variant: BadgeVariant }> = {
+                            [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
+                            [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
+                            [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
+                          };
+                          const s = map[insurance.status] || { label: insurance.status, variant: 'default' };
+                          return <Badge variant={s.variant}>{s.label}</Badge>;
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          {canManageInsurance ? (
+                            <>
+                              <Link href={`/payroll-config/insurance?edit=${insurance._id}`}>
+                                <Button size="sm" variant="outline">
+                                  Edit
+                                </Button>
+                              </Link>
+                              <Link href={`/payroll-config/insurance?status=${insurance._id}`}>
+                                <Button size="sm" variant="secondary">
+                                  Change status
+                                </Button>
+                              </Link>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDelete(insurance)}
+                              >
+                                Delete
+                              </Button>
+                            </>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">View Only</span>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

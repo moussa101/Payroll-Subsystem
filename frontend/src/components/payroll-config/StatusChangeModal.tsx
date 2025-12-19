@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/Modal';
 import { FormSelect, FormTextarea } from '@/components/ui/FormInput';
 import { ConfigStatus } from '@/types/payroll-config';
@@ -21,7 +21,7 @@ export const StatusChangeModal: React.FC<StatusChangeModalProps> = ({
   onConfirm,
   title,
 }) => {
-  const [status, setStatus] = useState<ConfigStatus>(ConfigStatus.APPROVED);
+  const [status, setStatus] = useState<ConfigStatus>(currentStatus);
   const [rejectionReason, setRejectionReason] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {

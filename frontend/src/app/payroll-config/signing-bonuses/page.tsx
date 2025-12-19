@@ -9,12 +9,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatNumber } from '@/lib/format';
+import { getCurrentUser } from '@/lib/auth';
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 export default function SigningBonusesPage() {
   const [signingBonuses, setSigningBonuses] = useState<SigningBonus[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const user = getCurrentUser();
+  const userRole = user?.role || '';
+  
+  // REQ-PY-19: Payroll Specialist & Manager can create/edit, Manager+ can approve/delete
+  const canCreate = ['Payroll Specialist', 'Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canApprove = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canDelete = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
 
   useEffect(() => {
     loadSigningBonuses();
@@ -58,9 +67,11 @@ export default function SigningBonusesPage() {
             <h1 className="text-3xl font-semibold text-foreground">Signing Bonuses</h1>
             <p className="text-muted-foreground text-sm">Manage signing incentives for positions.</p>
           </div>
-          <Link href="/payroll-config/signing-bonuses?create=true">
-            <Button>Create signing bonus</Button>
-          </Link>
+          {canCreate && (
+            <Link href="/payroll-config/signing-bonuses?create=true">
+              <Button>Create signing bonus</Button>
+            </Link>
+          )}
         </div>
 
         <Card>
@@ -79,7 +90,14 @@ export default function SigningBonusesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {signingBonuses.map((bonus) => (
+                {signingBonuses.map((bonus) => {
+                  const status = bonus.status.toLowerCase() as 'draft' | 'approved' | 'rejected';
+                  // Payroll Specialist can only edit drafts (REQ-PY-19)
+                  const canEditThis = userRole === 'Payroll Specialist' 
+                    ? (status === 'draft' && canCreate) 
+                    : (userRole === 'Payroll Manager' || userRole === 'System Admin');
+                  
+                  return (
                   <TableRow key={bonus._id}>
                     <TableCell className="font-medium">{bonus.positionName}</TableCell>
                     <TableCell>{formatNumber(bonus.amount)}</TableCell>
@@ -96,31 +114,34 @@ export default function SigningBonusesPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <Link href={`/payroll-config/signing-bonuses?edit=${bonus._id}`}>
+                        {canEditThis && (
+                          <Link href={`/payroll-config/signing-bonuses?edit=${bonus._id}`}>
+                            <Button size="sm" variant="outline">
+                              Edit
+                            </Button>
+                          </Link>
+                        )}
+                        {canApprove && (
+                          <Link href={`/payroll-config/signing-bonuses?status=${bonus._id}`}>
+                            <Button size="sm" variant="secondary">
+                              Change status
+                            </Button>
+                          </Link>
+                        )}
+                        {canDelete && (
                           <Button
                             size="sm"
-                            variant="outline"
-                            disabled={bonus.status !== ConfigStatus.DRAFT}
+                            variant="destructive"
+                            onClick={() => handleDelete(bonus)}
                           >
-                            Edit
+                            Delete
                           </Button>
-                        </Link>
-                        <Link href={`/payroll-config/signing-bonuses?status=${bonus._id}`}>
-                          <Button size="sm" variant="secondary">
-                            Change status
-                          </Button>
-                        </Link>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(bonus)}
-                        >
-                          Delete
-                        </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

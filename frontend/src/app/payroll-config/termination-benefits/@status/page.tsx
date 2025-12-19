@@ -4,7 +4,8 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { terminationBenefitsApi } from '@/app/payroll-config/client';
 import { TerminationBenefit, ConfigStatus } from '@/types/payroll-config';
-import { Button, Label } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 function ChangeStatusForm() {
   const router = useRouter();

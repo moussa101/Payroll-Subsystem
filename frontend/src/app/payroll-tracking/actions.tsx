@@ -66,6 +66,12 @@ export function ClaimActions({ claim }: { claim: ClaimRecord }) {
   if (["approved", "rejected"].includes(claim.status.toLowerCase())) {
     return <span className="text-xs text-slate-400">No actions</span>;
   }
+  if (claim.status.toLowerCase().includes("pending payroll manager approval")) {
+    return <span className="text-xs text-amber-200">Awaiting manager approval</span>;
+  }
+  if (claim.status.toLowerCase().includes("pending finance approval")) {
+    return <span className="text-xs text-indigo-200">Awaiting finance approval</span>;
+  }
 
   return (
     <div className="space-y-2">
@@ -116,6 +122,12 @@ export function DisputeActions({ dispute }: { dispute: DisputeRecord }) {
 
   if (["approved", "rejected"].includes(dispute.status.toLowerCase())) {
     return <span className="text-xs text-slate-400">No actions</span>;
+  }
+  if (dispute.status.toLowerCase().includes("pending payroll manager approval")) {
+    return <span className="text-xs text-amber-200">Awaiting manager approval</span>;
+  }
+  if (dispute.status.toLowerCase().includes("pending finance approval")) {
+    return <span className="text-xs text-indigo-200">Awaiting finance approval</span>;
   }
 
   return (

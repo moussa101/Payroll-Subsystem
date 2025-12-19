@@ -4,7 +4,9 @@ import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { payrollPoliciesApi } from '@/app/payroll-config/client';
 import { CreatePayrollPolicyDto, PolicyType, Applicability } from '@/types/payroll-config';
-import { Button, Input, Label } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const policyTypeOptions = [
   { value: PolicyType.ALLOWANCE, label: 'Allowance' },
@@ -59,6 +61,7 @@ function CreatePolicyForm() {
 
     setLoading(true);
     try {
+      // Send the form data as-is; backend will convert date string to Date object
       await payrollPoliciesApi.create(formData);
       router.push('/payroll-config/policies');
       router.refresh();

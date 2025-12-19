@@ -25,8 +25,8 @@ export class CreateRefundDto {
   refundDetails: RefundDetailsDto;
 
   @IsMongoId()
-  @IsNotEmpty()
-  employeeId: string;
+  @IsOptional()
+  employeeId?: string;
 
   @IsMongoId()
   @IsOptional()

@@ -1,19 +1,62 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DataTable, MetricCard, SectionCard, StatusPill } from "../components";
 import { getDisputes } from "../api";
 import { DisputeActions } from "../actions";
 
-export default async function DisputesPage() {
-  const disputes = await getDisputes().catch(() => []);
+export default function DisputesPage() {
+  const router = useRouter();
+  const [disputes, setDisputes] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const underReview = disputes.filter((d) =>
-    d.status.toLowerCase().includes("review"),
-  ).length;
-  const escalated = disputes.filter((d) =>
-    d.status.toLowerCase().includes("pending"),
-  ).length;
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      try {
+        const data = await getDisputes();
+        if (!isMounted) return;
+        setDisputes(data);
+      } catch (err: any) {
+        if (!isMounted) return;
+        const status = err?.response?.status;
+        if (status === 401) {
+          router.push("/login");
+          return;
+        }
+        setError(err?.message || "Failed to load disputes.");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
+
+  const underReview = useMemo(
+    () =>
+      disputes.filter((d) => d.status.toLowerCase().includes("review")).length,
+    [disputes],
+  );
+
+  const escalated = useMemo(
+    () =>
+      disputes.filter((d) => d.status.toLowerCase().includes("pending")).length,
+    [disputes],
+  );
 
   return (
     <div className="space-y-8">
+      {error ? (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <MetricCard
           label="Under review"
@@ -69,9 +112,9 @@ export default async function DisputesPage() {
               label: "History",
               render: (row) =>
                 row.statusHistory && row.statusHistory.length ? (
-                  <div className="space-y-1 text-xs text-slate-200">
-                    {row.statusHistory.slice(-3).map((h, idx) => (
-                      <div key={idx} className="flex items-center gap-1">
+                  <div className="space-y-1 text-xs text-slate-200 max-w-xs">
+                    {row.statusHistory.map((h, idx) => (
+                      <div key={idx} className="flex items-center gap-1 flex-wrap">
                         <span className="rounded bg-white/10 px-2 py-0.5 text-[11px] font-semibold">
                           {h.status}
                         </span>
@@ -95,10 +138,6 @@ export default async function DisputesPage() {
           rows={disputes}
           empty="No disputes opened"
         />
-        <p className="mt-4 text-sm text-slate-300">
-          Data loads from <code>{process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3000"}/disputes</code>. If the
-          request fails, the table will be empty.
-        </p>
       </SectionCard>
     </div>
   );

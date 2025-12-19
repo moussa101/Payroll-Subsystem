@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
 
 export default function NotFound() {
   return (
@@ -23,7 +23,7 @@ export default function NotFound() {
         <h2 className="text-3xl font-bold text-gray-900 mb-2">404</h2>
         <p className="text-xl text-gray-600 mb-2">Page Not Found</p>
         <p className="text-gray-500 mb-6">
-          The payroll configuration page you're looking for doesn't exist.
+          The payroll configuration page you&apos;re looking for doesn&apos;t exist.
         </p>
         <Link href="/payroll-config">
           <Button variant="default">

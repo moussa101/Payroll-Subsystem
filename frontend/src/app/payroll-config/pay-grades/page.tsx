@@ -9,12 +9,22 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatNumber } from '@/lib/format';
+import { getCurrentUser } from '@/lib/auth';
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 export default function PayGradesPage() {
   const [payGrades, setPayGrades] = useState<PayGrade[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const user = getCurrentUser();
+  const userRole = user?.role || '';
+
+  // REQ-PY-2: Payroll Specialist can create draft, edit draft, view all
+  // REQ-PY-18: Payroll Manager can edit and approve any configuration
+  const canCreate = ['Payroll Specialist', 'Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canApprove = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canDelete = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
 
   useEffect(() => {
     loadPayGrades();
@@ -60,9 +70,11 @@ export default function PayGradesPage() {
               Manage base and gross salary structures across departments and positions.
             </p>
           </div>
-          <Link href="/payroll-config/pay-grades?create=true">
-            <Button>Create pay grade</Button>
-          </Link>
+          {canCreate && (
+            <Link href="/payroll-config/pay-grades?create=true">
+              <Button>Create pay grade</Button>
+            </Link>
+          )}
         </div>
 
         <Card>
@@ -84,51 +96,61 @@ export default function PayGradesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {payGrades.map((payGrade) => (
-                  <TableRow key={payGrade._id}>
-                    <TableCell className="font-medium">{payGrade.grade}</TableCell>
-                    <TableCell>{formatNumber(payGrade.baseSalary)}</TableCell>
-                    <TableCell>{formatNumber(payGrade.grossSalary)}</TableCell>
-                    <TableCell>{payGrade.departmentId || 'N/A'}</TableCell>
-                    <TableCell>{payGrade.positionId || 'N/A'}</TableCell>
-                    <TableCell>
-                      {(() => {
-                        const map: Record<string, { label: string; variant: BadgeVariant }> = {
-                          [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
-                          [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
-                          [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
-                        };
-                        const s = map[payGrade.status] || { label: payGrade.status, variant: 'default' };
-                        return <Badge variant={s.variant}>{s.label}</Badge>;
-                      })()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Link href={`/payroll-config/pay-grades?edit=${payGrade._id}`}>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={payGrade.status !== ConfigStatus.DRAFT}
-                          >
-                            Edit
-                          </Button>
-                        </Link>
-                        <Link href={`/payroll-config/pay-grades?status=${payGrade._id}`}>
-                          <Button size="sm" variant="secondary">
-                            Change status
-                          </Button>
-                        </Link>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(payGrade)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {payGrades.map((payGrade) => {
+                  const status = payGrade.status.toLowerCase() as 'draft' | 'approved' | 'rejected';
+                  // Payroll Specialist can only edit drafts (REQ-PY-2)
+                  const canEditThis = userRole === 'Payroll Specialist' 
+                    ? (status === 'draft' && canCreate) 
+                    : (userRole === 'Payroll Manager' || userRole === 'System Admin');
+                  
+                  return (
+                    <TableRow key={payGrade._id}>
+                      <TableCell className="font-medium">{payGrade.grade}</TableCell>
+                      <TableCell>{formatNumber(payGrade.baseSalary)}</TableCell>
+                      <TableCell>{formatNumber(payGrade.grossSalary)}</TableCell>
+                      <TableCell>{payGrade.departmentId || 'N/A'}</TableCell>
+                      <TableCell>{payGrade.positionId || 'N/A'}</TableCell>
+                      <TableCell>
+                        {(() => {
+                          const map: Record<string, { label: string; variant: BadgeVariant }> = {
+                            [ConfigStatus.DRAFT]: { label: 'Draft', variant: 'secondary' },
+                            [ConfigStatus.APPROVED]: { label: 'Approved', variant: 'default' },
+                            [ConfigStatus.REJECTED]: { label: 'Rejected', variant: 'destructive' },
+                          };
+                          const s = map[payGrade.status] || { label: payGrade.status, variant: 'default' };
+                          return <Badge variant={s.variant}>{s.label}</Badge>;
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-2">
+                          {canEditThis && (
+                            <Link href={`/payroll-config/pay-grades?edit=${payGrade._id}`}>
+                              <Button size="sm" variant="outline">
+                                Edit
+                              </Button>
+                            </Link>
+                          )}
+                          {canApprove && (
+                            <Link href={`/payroll-config/pay-grades?status=${payGrade._id}`}>
+                              <Button size="sm" variant="secondary">
+                                Change status
+                              </Button>
+                            </Link>
+                          )}
+                          {canDelete && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDelete(payGrade)}
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

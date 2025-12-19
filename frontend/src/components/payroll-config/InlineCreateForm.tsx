@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
 
 interface InlineCreateFormProps {
   isOpen: boolean;

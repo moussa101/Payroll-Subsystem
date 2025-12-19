@@ -1,59 +1,126 @@
-import { DataTable, MetricCard, SectionCard, StatusPill } from "./components";
+ "use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  DataTable,
+  MetricCard,
+  SectionCard,
+  StatusPill,
+} from "./components";
 import { getApiBaseUrl, getClaims, getDisputes, getRefunds } from "./api";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const currency = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
 
-export default async function PayrollTrackingPage() {
-  const [liveClaims, liveDisputes, liveRefunds] = await Promise.all([
-    getClaims().catch(() => []),
-    getDisputes().catch(() => []),
-    getRefunds().catch(() => []),
-  ]);
+export default function PayrollTrackingPage() {
+  const router = useRouter();
+  const [claims, setClaims] = useState<any[]>([]);
+  const [disputes, setDisputes] = useState<any[]>([]);
+  const [refunds, setRefunds] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      try {
+        const [c, d, r] = await Promise.all([
+          getClaims().catch((err) => {
+            if (err?.response?.status === 401) throw err;
+            return [];
+          }),
+          getDisputes().catch((err) => {
+            if (err?.response?.status === 401) throw err;
+            return [];
+          }),
+          getRefunds().catch((err) => {
+            if (err?.response?.status === 401) throw err;
+            return [];
+          }),
+        ]);
+        if (!isMounted) return;
+        setClaims(c);
+        setDisputes(d);
+        setRefunds(r);
+      } catch (err: any) {
+        if (!isMounted) return;
+        const status = err?.response?.status;
+        if (status === 401) {
+          router.push("/login");
+          return;
+        }
+        setError(err?.message || "Failed to load payroll tracking data.");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
+
   const apiBase = getApiBaseUrl();
 
-  const claims = liveClaims;
-  const disputes = liveDisputes;
-  const refunds = liveRefunds;
+  const openClaims = useMemo(
+    () =>
+      claims.filter(
+        (c) => c.status !== "approved" && c.status !== "rejected",
+      ).length,
+    [claims],
+  );
 
-  const openClaims = claims.filter(
-    (c) => c.status !== "approved" && c.status !== "rejected",
-  ).length;
-  const openDisputes = disputes.filter(
-    (d) => d.status !== "approved" && d.status !== "rejected",
-  ).length;
-  const pendingRefunds = refunds.filter((r) => r.status !== "paid").length;
+  const openDisputes = useMemo(
+    () =>
+      disputes.filter(
+        (d) => d.status !== "approved" && d.status !== "rejected",
+      ).length,
+    [disputes],
+  );
+
+  const pendingRefunds = useMemo(
+    () => refunds.filter((r) => r.status !== "paid").length,
+    [refunds],
+  );
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-emerald-500/20 via-slate-900 to-slate-950 px-6 py-8 shadow-xl">
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div className="space-y-3">
-            <p className="text-sm uppercase tracking-[0.3em] text-emerald-100">
+    <div className="space-y-6">
+      {error ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          {error}
+        </div>
+      ) : null}
+
+      <Card className="border bg-white shadow-sm">
+        <CardHeader className="gap-4 sm:flex sm:items-end sm:justify-between">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Overview
             </p>
-            <h1 className="text-3xl font-semibold text-white">
-              Payroll tracking cockpit
-            </h1>
-            <p className="max-w-2xl text-lg text-slate-200">
-              Monitor employee claims, disputes, and payroll refunds from one
-              compact workspace. Use the quick links to drill into each queue.
-            </p>
-            <div className="flex flex-wrap gap-3 text-sm">
-              <span className="rounded-full bg-emerald-200/25 px-3 py-1 text-emerald-100 ring-1 ring-emerald-200/50">
-                Finance + Payroll visibility
-              </span>
-              <span className="rounded-full bg-white/10 px-3 py-1 text-white">
-                Status-aware summaries
-              </span>
-              <span className="rounded-full bg-white/10 px-3 py-1 text-white">
-                Actionable quick links
-              </span>
+            <CardTitle className="text-2xl">Payroll tracking</CardTitle>
+            <CardDescription className="max-w-2xl">
+              Monitor employee claims, disputes, and refunds in one view. Use the quick links to drill into each queue.
+            </CardDescription>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <BadgePill text="Finance + Payroll visibility" />
+              <BadgePill text="Status-aware summaries" />
+              <BadgePill text="Actionable quick links" />
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard
               label="Open claims"
               value={openClaims.toString()}
@@ -75,7 +142,9 @@ export default async function PayrollTrackingPage() {
             <MetricCard
               label="Latest payout"
               value={
-                refunds.length ? currency.format(refunds[0].amount) : currency.format(0)
+                refunds.length
+                  ? currency.format(refunds[0].amount)
+                  : currency.format(0)
               }
               hint={
                 refunds.length
@@ -85,8 +154,8 @@ export default async function PayrollTrackingPage() {
               accent="rose"
             />
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <SectionCard
@@ -178,18 +247,25 @@ export default async function PayrollTrackingPage() {
         title="Live activity"
         description="Real-time events can be pulled once an activity feed endpoint is exposed."
       >
-        <div className="rounded-xl border border-dashed border-white/20 bg-white/[0.02] p-6 text-sm text-slate-200">
+        <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
           No activity feed endpoint is connected yet. Expose a feed from the backend (e.g. recent claims/disputes/refunds updates) and hydrate this block.
         </div>
-        <div className="mt-4 flex items-center gap-3 text-sm text-slate-200">
-          <a
-            className="rounded-full border border-white/30 px-4 py-2 font-semibold hover:bg-white/10"
-            href={`${apiBase}/tax/document/${new Date().getFullYear()}`}
-          >
-            Download current year tax document
-          </a>
+        <div className="mt-4 flex items-center gap-3 text-sm">
+          <Button asChild variant="outline" size="sm">
+            <a href={`${apiBase}/tax/document/${new Date().getFullYear()}`}>
+              Download current year tax document
+            </a>
+          </Button>
         </div>
       </SectionCard>
     </div>
+  );
+}
+
+function BadgePill({ text }: { text: string }) {
+  return (
+    <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+      {text}
+    </span>
   );
 }
