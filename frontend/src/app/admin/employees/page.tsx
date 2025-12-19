@@ -205,7 +205,7 @@ export default function AdminEmployeesPage() {
                                 emp.profilePictureUrl
                                   ? emp.profilePictureUrl.startsWith("http")
                                     ? emp.profilePictureUrl
-                                    : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}${emp.profilePictureUrl}`
+                                    : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}${emp.profilePictureUrl}`
                                   : ""
                               }
                             />

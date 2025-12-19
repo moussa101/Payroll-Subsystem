@@ -29,7 +29,7 @@ import {
   UpdateTerminationBenefitDto,
 } from "@/types/payroll-config";
 
-const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5000";
+const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:4000";
 
 const authHeaders = () => {
   if (typeof window === "undefined") return { "Content-Type": "application/json" };

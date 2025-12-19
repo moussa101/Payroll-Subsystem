@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DataTable, MetricCard, SectionCard, StatusPill } from "../components";
 import { getClaims } from "../api";
 import { ClaimActions } from "../actions";
@@ -7,15 +11,58 @@ const currency = new Intl.NumberFormat("en-US", {
   currency: "USD",
 });
 
-export default async function ClaimsPage() {
-  const claims = await getClaims().catch(() => []);
+export default function ClaimsPage() {
+  const router = useRouter();
+  const [claims, setClaims] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const approved = claims.filter((c) => c.status === "approved").length;
-  const rejected = claims.filter((c) => c.status === "rejected").length;
-  const waiting = claims.length - approved - rejected;
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      try {
+        const data = await getClaims();
+        if (!isMounted) return;
+        setClaims(data);
+      } catch (err: any) {
+        if (!isMounted) return;
+        const status = err?.response?.status;
+        if (status === 401) {
+          router.push("/login");
+          return;
+        }
+        setError(err?.message || "Failed to load claims.");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
+
+  const approved = useMemo(
+    () => claims.filter((c) => c.status === "approved").length,
+    [claims],
+  );
+  const rejected = useMemo(
+    () => claims.filter((c) => c.status === "rejected").length,
+    [claims],
+  );
+  const waiting = useMemo(
+    () => Math.max(claims.length - approved - rejected, 0),
+    [claims, approved, rejected],
+  );
 
   return (
     <div className="space-y-8">
+      {error ? (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <MetricCard
           label="Open claims"
@@ -93,9 +140,9 @@ export default async function ClaimsPage() {
               label: "History",
               render: (row) =>
                 row.statusHistory && row.statusHistory.length ? (
-                  <div className="space-y-1 text-xs text-slate-200">
-                    {row.statusHistory.slice(-3).map((h, idx) => (
-                      <div key={idx} className="flex items-center gap-1">
+                  <div className="space-y-1 text-xs text-slate-200 max-w-xs">
+                    {row.statusHistory.map((h, idx) => (
+                      <div key={idx} className="flex items-center gap-1 flex-wrap">
                         <span className="rounded bg-white/10 px-2 py-0.5 text-[11px] font-semibold">
                           {h.status}
                         </span>
@@ -119,10 +166,6 @@ export default async function ClaimsPage() {
           rows={claims}
           empty="No claims yet"
         />
-        <p className="mt-4 text-sm text-slate-300">
-          Data loads from <code>{process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3000"}/claims</code>. If the request
-          fails, the table will be empty.
-        </p>
       </SectionCard>
     </div>
   );

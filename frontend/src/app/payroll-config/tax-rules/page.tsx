@@ -8,12 +8,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { getCurrentUser } from '@/lib/auth';
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 function TaxRulesPage() {
   const [taxRules, setTaxRules] = useState<TaxRule[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const user = getCurrentUser();
+  const userRole = user?.role || '';
+  
+  // REQ-PY-10: Payroll Specialist & Manager can create/edit, Manager+ can approve/delete
+  const canCreate = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canApprove = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canDelete = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
 
   useEffect(() => {
     loadTaxRules();
@@ -57,9 +66,11 @@ function TaxRulesPage() {
             <h1 className="text-3xl font-semibold text-foreground">Tax Rules</h1>
             <p className="text-muted-foreground text-sm">Manage tax rates with approval workflows.</p>
           </div>
-          <Link href="/payroll-config/tax-rules?create=true">
-            <Button>Create tax rule</Button>
-          </Link>
+          {canCreate && (
+            <Link href="/payroll-config/tax-rules?create=true">
+              <Button>Create tax rule</Button>
+            </Link>
+          )}
         </div>
 
         <Card>
@@ -79,7 +90,14 @@ function TaxRulesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {taxRules.map((taxRule) => (
+                {taxRules.map((taxRule) => {
+                  const status = taxRule.status.toLowerCase() as 'draft' | 'approved' | 'rejected';
+                  // Payroll Specialist can only edit drafts (REQ-PY-10)
+                  const canEditThis = userRole === 'Payroll Specialist' 
+                    ? (status === 'draft' && canCreate) 
+                    : (userRole === 'Payroll Manager' || userRole === 'System Admin');
+                  
+                  return (
                   <TableRow key={taxRule._id}>
                     <TableCell className="font-medium">{taxRule.name}</TableCell>
                     <TableCell className="max-w-xl">{taxRule.description || 'N/A'}</TableCell>
@@ -97,31 +115,34 @@ function TaxRulesPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <Link href={`/payroll-config/tax-rules?edit=${taxRule._id}`}>
+                        {canEditThis && (
+                          <Link href={`/payroll-config/tax-rules?edit=${taxRule._id}`}>
+                            <Button size="sm" variant="outline">
+                              Edit
+                            </Button>
+                          </Link>
+                        )}
+                        {canApprove && (
+                          <Link href={`/payroll-config/tax-rules?status=${taxRule._id}`}>
+                            <Button size="sm" variant="secondary">
+                              Change status
+                            </Button>
+                          </Link>
+                        )}
+                        {canDelete && (
                           <Button
                             size="sm"
-                            variant="outline"
-                            disabled={taxRule.status !== ConfigStatus.DRAFT}
+                            variant="destructive"
+                            onClick={() => handleDelete(taxRule)}
                           >
-                            Edit
+                            Delete
                           </Button>
-                        </Link>
-                        <Link href={`/payroll-config/tax-rules?status=${taxRule._id}`}>
-                          <Button size="sm" variant="secondary">
-                            Change status
-                          </Button>
-                        </Link>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(taxRule)}
-                        >
-                          Delete
-                        </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

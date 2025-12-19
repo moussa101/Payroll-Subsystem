@@ -9,12 +9,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatNumber } from '@/lib/format';
+import { getCurrentUser } from '@/lib/auth';
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 export default function TerminationBenefitsPage() {
   const [terminationBenefits, setTerminationBenefits] = useState<TerminationBenefit[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const user = getCurrentUser();
+  const userRole = user?.role || '';
+  
+  // REQ-PY-20: Payroll Specialist & Manager can create/edit, Manager+ can approve/delete
+  const canCreate = ['Payroll Specialist', 'Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canApprove = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
+  const canDelete = ['Payroll Manager', 'HR Manager', 'System Admin'].includes(userRole);
 
   useEffect(() => {
     loadTerminationBenefits();
@@ -58,9 +67,11 @@ export default function TerminationBenefitsPage() {
             <h1 className="text-3xl font-semibold text-foreground">Termination Benefits</h1>
             <p className="text-muted-foreground text-sm">Manage severance packages and approval state.</p>
           </div>
-          <Link href="/payroll-config/termination-benefits?create=true">
-            <Button>Create termination benefit</Button>
-          </Link>
+          {canCreate && (
+            <Link href="/payroll-config/termination-benefits?create=true">
+              <Button>Create termination benefit</Button>
+            </Link>
+          )}
         </div>
 
         <Card>
@@ -80,7 +91,14 @@ export default function TerminationBenefitsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {terminationBenefits.map((benefit) => (
+                {terminationBenefits.map((benefit) => {
+                  const status = benefit.status.toLowerCase() as 'draft' | 'approved' | 'rejected';
+                  // Payroll Specialist can only edit drafts (REQ-PY-20)
+                  const canEditThis = userRole === 'Payroll Specialist' 
+                    ? (status === 'draft' && canCreate) 
+                    : (userRole === 'Payroll Manager' || userRole === 'System Admin');
+                  
+                  return (
                   <TableRow key={benefit._id}>
                     <TableCell className="font-medium">{benefit.name}</TableCell>
                     <TableCell>{formatNumber(benefit.amount)}</TableCell>
@@ -98,31 +116,34 @@ export default function TerminationBenefitsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <Link href={`/payroll-config/termination-benefits?edit=${benefit._id}`}>
+                        {canEditThis && (
+                          <Link href={`/payroll-config/termination-benefits?edit=${benefit._id}`}>
+                            <Button size="sm" variant="outline">
+                              Edit
+                            </Button>
+                          </Link>
+                        )}
+                        {canApprove && (
+                          <Link href={`/payroll-config/termination-benefits?status=${benefit._id}`}>
+                            <Button size="sm" variant="secondary">
+                              Change status
+                            </Button>
+                          </Link>
+                        )}
+                        {canDelete && (
                           <Button
                             size="sm"
-                            variant="outline"
-                            disabled={benefit.status !== ConfigStatus.DRAFT}
+                            variant="destructive"
+                            onClick={() => handleDelete(benefit)}
                           >
-                            Edit
+                            Delete
                           </Button>
-                        </Link>
-                        <Link href={`/payroll-config/termination-benefits?status=${benefit._id}`}>
-                          <Button size="sm" variant="secondary">
-                            Change status
-                          </Button>
-                        </Link>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(benefit)}
-                        >
-                          Delete
-                        </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

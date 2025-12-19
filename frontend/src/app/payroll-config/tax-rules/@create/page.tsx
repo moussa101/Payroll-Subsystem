@@ -4,7 +4,9 @@ import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { taxRulesApi } from '@/app/payroll-config/client';
 import { CreateTaxRuleDto } from '@/types/payroll-config';
-import { Button, Input, Label } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 function CreateTaxRuleForm() {
   const router = useRouter();
@@ -91,7 +93,7 @@ function CreateTaxRuleForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={loading}>
+              <Button type="submit" variant="default" disabled={loading}>
                 Create
               </Button>
             </div>

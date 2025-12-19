@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatDateReadable } from '@/lib/format';
+import { getCurrentUser } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 export default function CompanySettingsPage() {
   const [settings, setSettings] = useState<CompanySettings | null>(null);
@@ -20,9 +22,24 @@ export default function CompanySettingsPage() {
     currency: 'EGP',
   });
 
+  const router = useRouter();
+  const user = getCurrentUser();
+  const userRole = user?.role || '';
+
+  // REQ-PY-15: Only System Admin can access company settings
   useEffect(() => {
-    loadSettings();
-  }, []);
+    if (userRole && userRole !== 'System Admin') {
+      alert('Access Denied: Only System Admins can access company settings.');
+      router.push('/payroll-config');
+      return;
+    }
+  }, [userRole, router]);
+
+  useEffect(() => {
+    if (userRole === 'System Admin') {
+      loadSettings();
+    }
+  }, [userRole]);
 
   const loadSettings = async () => {
     try {
@@ -90,6 +107,11 @@ export default function CompanySettingsPage() {
     { value: 'EUR', label: 'EUR - Euro' },
     { value: 'GBP', label: 'GBP - British Pound' },
   ];
+
+  // Don't render anything for non-System Admins
+  if (userRole && userRole !== 'System Admin') {
+    return null;
+  }
 
   if (loading) {
     return null; // Let the loading.tsx handle the loading state

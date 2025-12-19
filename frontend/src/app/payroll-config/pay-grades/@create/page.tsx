@@ -4,7 +4,9 @@ import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { payGradesApi } from '@/app/payroll-config/client';
 import { CreatePayGradeDto } from '@/types/payroll-config';
-import { Button, Input, Label } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 function CreatePayGradeForm() {
   const router = useRouter();
@@ -92,19 +94,19 @@ function CreatePayGradeForm() {
                 />
               </div>
               <div>
-                <Label>Department ID (Optional)</Label>
+                <Label>Department ID </Label>
                 <Input
                   value={formData.departmentId}
                   onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                  placeholder="MongoDB ObjectId"
+                  placeholder=""
                 />
               </div>
               <div>
-                <Label>Position ID (Optional)</Label>
+                <Label>Position ID</Label>
                 <Input
                   value={formData.positionId}
                   onChange={(e) => setFormData({ ...formData, positionId: e.target.value })}
-                  placeholder="MongoDB ObjectId"
+                  placeholder=""
                 />
               </div>
             </div>
@@ -116,7 +118,7 @@ function CreatePayGradeForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={loading}>
+              <Button type="submit" variant="default" disabled={loading}>
                 Create
               </Button>
             </div>

@@ -11,8 +11,8 @@ export class CreateDisputeDto {
   description: string;
 
   @IsMongoId()
-  @IsNotEmpty()
-  employeeId: string;
+  @IsOptional()
+  employeeId?: string;
 
   @IsMongoId()
   @IsOptional()

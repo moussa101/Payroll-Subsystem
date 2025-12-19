@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DataTable, MetricCard, SectionCard, StatusPill } from "../components";
 import { getRefunds } from "../api";
 
@@ -6,14 +10,51 @@ const currency = new Intl.NumberFormat("en-US", {
   currency: "USD",
 });
 
-export default async function RefundsPage() {
-  const refunds = await getRefunds().catch(() => []);
+export default function RefundsPage() {
+  const router = useRouter();
+  const [refunds, setRefunds] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const paid = refunds.filter((r) => r.status === "paid").length;
-  const pending = refunds.length - paid;
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      try {
+        const data = await getRefunds();
+        if (!isMounted) return;
+        setRefunds(data);
+      } catch (err: any) {
+        if (!isMounted) return;
+        const status = err?.response?.status;
+        if (status === 401) {
+          router.push("/login");
+          return;
+        }
+        setError(err?.message || "Failed to load refunds.");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
+
+  const paid = useMemo(
+    () => refunds.filter((r) => r.status === "paid").length,
+    [refunds],
+  );
+  const pending = useMemo(() => refunds.length - paid, [refunds, paid]);
 
   return (
     <div className="space-y-8">
+      {error ? (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           label="Pending refunds"
@@ -84,14 +125,25 @@ export default async function RefundsPage() {
               label: "Status",
               render: (row) => <StatusPill status={row.status} />,
             },
+            {
+              key: "history",
+              label: "History",
+              render: (row) => (
+                <div className="text-xs text-slate-300">
+                  <p>Created → {row.referenceType}</p>
+                  <p>
+                    Payment:{" "}
+                    {row.status === "paid"
+                      ? "Included in payroll"
+                      : "Pending finance approval / payroll run"}
+                  </p>
+                </div>
+              ),
+            },
           ]}
           rows={refunds}
           empty="No refunds in the queue"
         />
-        <p className="mt-4 text-sm text-slate-300">
-          Data loads from <code>{process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3000"}/refunds</code>. If the request
-          fails, the table will be empty.
-        </p>
       </SectionCard>
     </div>
   );

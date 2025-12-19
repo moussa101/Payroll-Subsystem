@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button } from '@/components/ui/shadcn';
+import { Button } from '@/components/ui/button';
 
 interface InlineCreateFormProps {
   isOpen: boolean;
@@ -42,7 +42,7 @@ export const InlineCreateForm: React.FC<InlineCreateFormProps> = ({
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary">
+          <Button type="submit" variant="default">
             {submitLabel}
           </Button>
         </div>
