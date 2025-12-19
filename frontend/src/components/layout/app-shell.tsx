@@ -100,7 +100,6 @@ const navSections: NavSection[] = [
     ],
     requiredRoles: ["department employee"],
   },
-
   {
     label: "Conduct Apprasials", // same label = merges visually
     items: [{ href: "/performance/assignments", label: "Appraise my team" }],
@@ -126,6 +125,12 @@ const navSections: NavSection[] = [
       "HR Admin",
       "HR Manager",
       "System Admin",
+    ],
+  },
+  {
+    label: "Payroll Tracking",
+    items: [
+      { href: "/payroll-tracking", label: "Payroll tracking" },
     ],
   },
 ];

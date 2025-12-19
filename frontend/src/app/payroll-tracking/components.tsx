@@ -1,22 +1,38 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export function StatusPill({ status }: { status: string }) {
   const normalized = status.toLowerCase();
-
   const tone =
     normalized.includes("approved") || normalized.includes("paid")
-      ? "bg-emerald-200/80 text-emerald-900 ring-1 ring-emerald-200"
-      : normalized.includes("pending")
-      ? "bg-amber-100/80 text-amber-900 ring-1 ring-amber-200"
+      ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+      : normalized.includes("pending") || normalized.includes("under")
+      ? "bg-amber-50 text-amber-700 border border-amber-100"
       : normalized.includes("rejected")
-      ? "bg-rose-100/80 text-rose-900 ring-1 ring-rose-200"
-      : "bg-sky-100/70 text-sky-900 ring-1 ring-sky-200";
+      ? "bg-rose-50 text-rose-700 border border-rose-100"
+      : "bg-slate-100 text-slate-700 border border-slate-200";
 
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${tone}`}>
+    <Badge className={`capitalize ${tone}`} variant="secondary">
       {status}
-    </span>
+    </Badge>
   );
 }
 
@@ -34,26 +50,24 @@ export function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.25)] backdrop-blur">
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-emerald-200/[0.06]" />
-      <header className="relative mb-4 flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-semibold text-white">{title}</h2>
-          {description ? (
-            <p className="text-sm text-slate-300">{description}</p>
+    <Card className="h-full">
+      <CardHeader className="pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-base">{title}</CardTitle>
+            {description ? (
+              <CardDescription>{description}</CardDescription>
+            ) : null}
+          </div>
+          {actionHref && actionLabel ? (
+            <Button asChild variant="outline" size="sm">
+              <Link href={actionHref}>{actionLabel}</Link>
+            </Button>
           ) : null}
         </div>
-        {actionHref && actionLabel ? (
-          <Link
-            href={actionHref}
-            className="rounded-full bg-white text-slate-900 px-4 py-2 text-sm font-semibold shadow-sm transition hover:scale-[1.01] hover:shadow"
-          >
-            {actionLabel}
-          </Link>
-        ) : null}
-      </header>
-      <div className="relative">{children}</div>
-    </section>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
   );
 }
 
@@ -69,22 +83,24 @@ export function MetricCard({
   accent?: "emerald" | "amber" | "indigo" | "rose";
 }) {
   const accents: Record<string, string> = {
-    emerald: "bg-emerald-400/20 text-emerald-100 border-emerald-200/30",
-    amber: "bg-amber-400/20 text-amber-100 border-amber-200/30",
-    indigo: "bg-indigo-400/20 text-indigo-100 border-indigo-200/30",
-    rose: "bg-rose-400/20 text-rose-100 border-rose-200/30",
+    emerald: "border-emerald-100 bg-emerald-50 text-emerald-900",
+    amber: "border-amber-100 bg-amber-50 text-amber-900",
+    indigo: "border-indigo-100 bg-indigo-50 text-indigo-900",
+    rose: "border-rose-100 bg-rose-50 text-rose-900",
   };
 
-  const accentClass = accent ? accents[accent] : "bg-white/5 text-white";
+  const accentClass = accent ? accents[accent] : "bg-card";
 
   return (
-    <div className={`rounded-2xl border p-4 shadow-sm ${accentClass}`}>
-      <p className="text-xs uppercase tracking-[0.2em] text-white/80">
-        {label}
-      </p>
-      <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
-      {hint ? <p className="text-sm text-white/80">{hint}</p> : null}
-    </div>
+    <Card className={`shadow-sm ${accentClass}`}>
+      <CardContent className="space-y-2 pt-6">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        <p className="text-2xl font-semibold">{value}</p>
+        {hint ? <p className="text-sm text-muted-foreground">{hint}</p> : null}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -105,43 +121,40 @@ export function DataTable<T extends Record<string, unknown>>({
   empty?: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/40">
-      <table className="min-w-full divide-y divide-white/10 text-left text-sm text-slate-100">
-        <thead className="bg-white/5 text-xs uppercase tracking-[0.2em] text-slate-300">
-          <tr>
+    <div className="rounded-xl border bg-card shadow-sm">
+      <Table>
+        <TableHeader>
+          <TableRow>
             {columns.map((col) => (
-              <th key={String(col.key)} className={`px-4 py-3 ${col.className ?? ""}`}>
+              <TableHead key={String(col.key)} className={col.className}>
                 {col.label}
-              </th>
+              </TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.length === 0 ? (
-            <tr>
-              <td
+            <TableRow>
+              <TableCell
                 colSpan={columns.length}
-                className="px-4 py-6 text-center text-slate-400"
+                className="text-center text-muted-foreground"
               >
                 {empty ?? "No records yet"}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ) : (
             rows.map((row, idx) => (
-              <tr
-                key={idx}
-                className="border-b border-white/5 last:border-none hover:bg-white/[0.03]"
-              >
+              <TableRow key={idx}>
                 {columns.map((col) => (
-                  <td key={String(col.key)} className={`px-4 py-4 ${col.className ?? ""}`}>
+                  <TableCell key={String(col.key)} className={col.className}>
                     {col.render ? col.render(row) : (row[col.key] as ReactNode)}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

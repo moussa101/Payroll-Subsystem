@@ -1,9 +1,9 @@
-import axios from "axios";
 import type {
   ClaimRecord,
   DisputeRecord,
   RefundRecord,
 } from "./data";
+import { api as sharedApi } from "@/lib/api";
 
 type RefShape = {
   _id?: string;
@@ -58,10 +58,7 @@ type RefundApi = {
   updatedAt?: string;
 };
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3000",
-  timeout: 10000,
-});
+const api = sharedApi;
 
 export async function getClaims(): Promise<ClaimRecord[]> {
   try {
