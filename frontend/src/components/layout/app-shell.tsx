@@ -109,8 +109,8 @@ const navSections: NavSection[] = [
   {
     label: "Payroll Execution",
     items: [
-      { href: "/payroll-execution", label: "Dashboard" },
-      { href: "/payroll-execution/initiate", label: "Initiate Cycle" },
+      { href: "/payroll-execution", label: "Payroll Cycle" },
+      //{ href: "/payroll-execution/initiate", label: "Initiate Cycle" },
       { href: "/payroll-execution/review/current", label: "Review Cycle" },
     ],
     requiredRoles: payrollConfigRoles,
