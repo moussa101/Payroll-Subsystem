@@ -8,7 +8,7 @@ import { ReactNode, useCallback, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "a@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { getCurrentUser, clearAuth } from "@/lib/auth";
 import type { AuthPayload } from "@/types/auth";
@@ -42,8 +42,6 @@ type NavSection = {
 const payrollConfigRoles = [
   "Payroll Manager",
   "Payroll Specialist",
-  "HR Admin",
-  "HR Manager",
   "System Admin",
 ];
 
@@ -159,6 +157,7 @@ export function AppShell({
   const router = useRouter();
 
   const user = useMemo<AuthPayload | null>(() => getCurrentUser(), []);
+
 
   // Helper: does user have at least one of the given roles?
   const hasAnyRole = useCallback((required?: string[]) => {

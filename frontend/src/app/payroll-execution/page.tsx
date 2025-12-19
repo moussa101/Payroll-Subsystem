@@ -102,18 +102,28 @@ export default function PayrollExecutionPage() {
                     </p>
                 </div>
 
-                <Link href={getActionLink()}>
-                    <button className="bg-[#0B1120] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800">
-                        {getActionLabel()}
-                    </button>
-                </Link>
+                <div className="flex space-x-4">
+                    {/* Existing dynamic button */}
+                    <Link href={getActionLink()}>
+                        <button className="bg-[#0B1120] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800">
+                            {getActionLabel()}
+                        </button>
+                    </Link>
+
+                    {/* Dedicated Initiate Payroll button */}
+                    <Link href="/payroll-execution/initiate">
+                        <button className="bg-green-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700">
+                            Initiate Payroll
+                        </button>
+                    </Link>
+                </div>
             </div>
 
             <StatusCard
                 status={statusData.status}
                 cyclePeriod={statusData.cyclePeriod}
                 employeeCount={statusData.employeeCount}
-                totalAmount={statusData.totalAmount}
+                totalAmount={statusData.totalAmount || 0} // added fallback to avoid runtime error
             />
         </div>
     );
