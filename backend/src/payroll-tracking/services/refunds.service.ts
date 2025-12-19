@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { refunds, refundsDocument } from '../models/refunds.schema';
@@ -11,6 +11,8 @@ import {
   payrollRuns,
   payrollRunsDocument,
 } from '../../payroll-execution/models/payrollRuns.schema';
+import { AuthUser } from '../../auth/auth-user.interface';
+import { SystemRole } from '../../employee-profile/enums/employee-profile.enums';
 
 @Injectable()
 export class RefundsService {
@@ -23,14 +25,21 @@ export class RefundsService {
 
   ) {}
 
-  async create(createRefundDto: CreateRefundDto): Promise<refunds> {
-    const refund = new this.refundModel(createRefundDto);
+  async create(createRefundDto: CreateRefundDto, user: AuthUser): Promise<refunds> {
+    const refund = new this.refundModel({
+      ...createRefundDto,
+      employeeId: user.employeeId,
+      financeStaffId: this.isPrivileged(user)
+        ? createRefundDto.financeStaffId ?? undefined
+        : undefined,
+    });
     return refund.save();
   }
 
-  async findAll(): Promise<refunds[]> {
+  async findAll(user: AuthUser): Promise<refunds[]> {
+    const filter = this.isPrivileged(user) ? {} : { employeeId: user.employeeId };
     return this.refundModel
-      .find()
+      .find(filter)
       .populate('claimId')
       .populate('disputeId')
       .populate('employeeId')
@@ -39,7 +48,7 @@ export class RefundsService {
       .exec();
   }
 
-  async findOne(id: string): Promise<refunds> {
+  async findOne(id: string, user: AuthUser): Promise<refunds> {
     const refund = await this.refundModel
       .findById(id)
       .populate('claimId')
@@ -53,22 +62,45 @@ export class RefundsService {
       throw new NotFoundException(`Refund with id "${id}" not found`);
     }
 
+    this.assertSelfOrAdmin(refund, user);
     return refund;
   }
 
-  async update(id: string, updateRefundDto: UpdateRefundDto): Promise<refunds> {
-    const updated = await this.refundModel
-      .findByIdAndUpdate(id, { $set: updateRefundDto }, { new: true })
-      .exec();
-
-    if (!updated) {
+  async update(id: string, updateRefundDto: UpdateRefundDto, user: AuthUser): Promise<refunds> {
+    const refund = await this.refundModel.findById(id).exec();
+    if (!refund) {
       throw new NotFoundException(`Refund with id "${id}" not found`);
     }
 
-    return updated;
+    this.assertSelfOrAdmin(refund, user, 'update this refund');
+
+    // copy incoming DTO to a mutable object and coerce string IDs to ObjectId where appropriate
+    const payloadObj: any = { ...updateRefundDto };
+
+    // convert common ID fields from string -> ObjectId when valid strings are provided
+    for (const key of ['claimId', 'disputeId', 'employeeId', 'financeStaffId', 'paidInPayrollRunId']) {
+      const val = payloadObj[key];
+      if (typeof val === 'string' && Types.ObjectId.isValid(val)) {
+        payloadObj[key] = new Types.ObjectId(val);
+      }
+    }
+
+    const payload: Partial<refunds> = payloadObj;
+    if (!this.isPrivileged(user)) {
+      delete (payload as any).employeeId;
+      delete (payload as any).financeStaffId;
+      delete (payload as any).status;
+      delete (payload as any).paidInPayrollRunId;
+    }
+
+    Object.assign(refund, payload);
+    await refund.save();
+    await refund.populate(['claimId', 'disputeId', 'employeeId', 'financeStaffId', 'paidInPayrollRunId']);
+    return refund;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, user: AuthUser): Promise<void> {
+    this.assertPrivileged(user);
     const deleted = await this.refundModel.findByIdAndDelete(id).exec();
     if (!deleted) {
       throw new NotFoundException(`Refund with id "${id}" not found`);
@@ -136,5 +168,38 @@ export class RefundsService {
     }
 
     return applied;
+  }
+
+  private getRoles(user: AuthUser): SystemRole[] {
+    return [user.role, ...(user.roles ?? [])].filter(Boolean) as SystemRole[];
+  }
+
+  private isPrivileged(user: AuthUser): boolean {
+    return this.getRoles(user).some((r) =>
+      [
+        SystemRole.SYSTEM_ADMIN,
+        SystemRole.PAYROLL_SPECIALIST,
+        SystemRole.PAYROLL_MANAGER,
+        SystemRole.FINANCE_STAFF,
+      ].includes(r),
+    );
+  }
+
+  private assertSelfOrAdmin(
+    refund: refundsDocument,
+    user: AuthUser,
+    action = 'access this refund',
+  ): void {
+    if (this.isPrivileged(user)) return;
+
+    if (refund.employeeId?.toString() !== user.employeeId) {
+      throw new ForbiddenException(`You can only ${action}`);
+    }
+  }
+
+  private assertPrivileged(user: AuthUser): void {
+    if (!this.isPrivileged(user)) {
+      throw new ForbiddenException('Only payroll specialists, managers, finance staff, or admins can perform this action');
+    }
   }
 }

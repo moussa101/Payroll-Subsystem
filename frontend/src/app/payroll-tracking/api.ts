@@ -1,9 +1,10 @@
-import axios from "axios";
 import type {
   ClaimRecord,
   DisputeRecord,
   RefundRecord,
+  PayslipRecord,
 } from "./data";
+import { api as sharedApi } from "@/lib/api";
 
 type RefShape = {
   _id?: string;
@@ -58,10 +59,30 @@ type RefundApi = {
   updatedAt?: string;
 };
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3000",
-  timeout: 10000,
-});
+type PayslipApi = {
+  _id?: string;
+  payrollRun?: string;
+  employee?: string;
+  earnings?: {
+    baseSalary?: number;
+    allowances?: { name?: string; amount?: number }[];
+    bonuses?: { name?: string; amount?: number }[];
+    benefits?: { name?: string; amount?: number }[];
+    refunds?: { description?: string; amount?: number }[];
+  };
+  deductions?: {
+    taxes?: { name?: string; rate?: number }[];
+    insurances?: { name?: string; employeeRate?: number }[];
+    penalties?: { reason?: string; amount?: number }[] | null;
+  };
+  netPay?: number;
+  totalGrossSalary?: number;
+  paymentStatus?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+const api = sharedApi;
 
 export async function getClaims(): Promise<ClaimRecord[]> {
   try {
@@ -164,6 +185,38 @@ export async function getRefunds(): Promise<RefundRecord[]> {
     console.error("Failed to fetch refunds", error);
     throw error;
   }
+}
+
+export async function getPayslips(): Promise<PayslipRecord[]> {
+  const res = await api.get("/payslips");
+  const items: PayslipApi[] = Array.isArray(res.data) ? res.data : [];
+  return items.map((p) => ({
+    id: p._id ?? "N/A",
+    payrollRun: p.payrollRun,
+    employee: p.employee,
+    department: (p as any).department,
+    contractType: (p as any).contractType,
+    workType: (p as any).workType,
+    baseSalary: Number(p.earnings?.baseSalary ?? 0),
+    allowances: p.earnings?.allowances ?? [],
+    transportAllowances: (p as any).earnings?.transportAllowances ?? [],
+    bonuses: p.earnings?.bonuses ?? [],
+    benefits: p.earnings?.benefits ?? [],
+    leaveEncashment: (p as any).earnings?.leaveEncashment ?? [],
+    refunds: p.earnings?.refunds ?? [],
+    taxes: p.deductions?.taxes ?? [],
+    insurances: p.deductions?.insurances ?? [],
+    employerInsuranceContributions: (p as any).employerInsuranceContributions ?? [],
+    penalties: p.deductions?.penalties ?? null,
+    unpaidLeave: (p.deductions as any)?.unpaidLeave ?? [],
+    netPay: Number(p.netPay ?? 0),
+    totalGrossSalary: Number((p as any).totalGrossSalary ?? 0),
+    totalDeductions: Number((p as any).totalDeductions ?? 0),
+    status: p.paymentStatus ?? "pending",
+    dispute: (p as any).dispute,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  }));
 }
 
 export function getApiBaseUrl() {
