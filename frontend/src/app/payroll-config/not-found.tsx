@@ -26,7 +26,7 @@ export default function NotFound() {
           The payroll configuration page you're looking for doesn't exist.
         </p>
         <Link href="/payroll-config">
-          <Button variant="primary">
+          <Button variant="default">
             Return to Payroll Config
           </Button>
         </Link>

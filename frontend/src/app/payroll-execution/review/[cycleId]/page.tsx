@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { notFound } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { PayrollTable, EmployeePayroll } from '@/components/payroll/PayrollTable';
 import { CorrectionSheet, CorrectionData } from '@/components/payroll/CorrectionSheet';
 import Link from 'next/link';
@@ -15,16 +15,38 @@ const MOCK_EMPLOYEES: EmployeePayroll[] = [
     { id: '3', name: 'Charlie Brown', role: 'Designer', grossPay: 4000, taxes: 800, deductions: 100, netPay: 3100, hasByAnomaly: false, status: 'Ready' },
 ];
 
-export default function ReviewPage({ params }: { params: { cycleId: string } }) {
+import { hasAnyRole, getToken } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
+// ... (existing imports)
+
+export default function ReviewPage({ params }: { params: { cycleId: string } }) {
+    const router = useRouter();
     const [employees, setEmployees] = useState<EmployeePayroll[]>([]);
     const [selectedEmployee, setSelectedEmployee] = useState<CorrectionData | null>(null);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [isAuthorized, setIsAuthorized] = useState(false);
+
+    React.useEffect(() => {
+        const authorized = hasAnyRole([
+            'Payroll Specialist',
+            'Payroll Manager',
+            'System Admin'
+        ]);
+
+        if (!authorized) {
+            router.push('/payroll-execution');
+        } else {
+            setIsAuthorized(true);
+        }
+    }, [router]);
+
+    if (!isAuthorized) return null;
 
     const fetchEmployees = async () => {
         try {
-            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            const token = getToken();
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
             const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
@@ -57,7 +79,7 @@ export default function ReviewPage({ params }: { params: { cycleId: string } }) 
 
     const handleSaveCorrection = async (data: CorrectionData) => {
         try {
-            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            const token = getToken();
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
             const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
@@ -76,7 +98,7 @@ export default function ReviewPage({ params }: { params: { cycleId: string } }) 
 
     const handlePublish = async () => {
         try {
-            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            const token = getToken();
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
             const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
@@ -107,7 +129,7 @@ export default function ReviewPage({ params }: { params: { cycleId: string } }) 
                     <p className="text-sm text-gray-500 dark:text-gray-400">Cycle ID: {Math.floor(Math.random() * 1000)} {/* Just a placeholder for cycleId param */}</p>
                 </div>
                 <div>
-                    <Button variant="primary" disabled={hasErrors} onClick={handlePublish}>
+                    <Button variant="default" disabled={hasErrors} onClick={handlePublish}>
                         Publish for Manager Review
                     </Button>
                 </div>

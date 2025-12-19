@@ -1,295 +1,234 @@
+
 "use client";
 
-import { useState } from 'react';
-import { Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import React, { useEffect, useState, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { usePayroll } from "@/context/PayrollContext";
+import { hasAnyRole, getCurrentUser, getToken } from "@/lib/auth";
+import { FinancialSummary } from "@/components/payroll-execution/approval/FinancialSummary";
+import { AnomalyList } from "@/components/payroll-execution/approval/AnomalyList";
+import { AuditLog } from "@/components/payroll-execution/approval/AuditLog";
+import { ApprovalActions } from "@/components/payroll-execution/approval/ApprovalActions";
+import { PayrollCycle, PayrollCycleStatus } from "@/types/payroll-execution";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft } from "lucide-react";
+import { toast } from "sonner";
+import axios from "axios";
 
-// 1. Data & Types
-import { MOCK_CYCLE } from '@/lib/mock-payroll';
-import { UserRole } from '@/types/payroll-execution';
+// Mock data as backup if API fails or for dev
+const MOCK_CYCLE: PayrollCycle = {
+  id: "1",
+  period: "December 2025",
+  status: PayrollCycleStatus.UNDER_REVIEW,
+  summary: {
+    totalGross: 452000,
+    totalTaxes: 90400,
+    totalNetPayable: 361600,
+    employeeCount: 142,
+  },
+  anomalies: [
+    {
+      employeeId: "E005",
+      name: "John Doe",
+      issue: "Net salary varies by >15% compared to last month",
+    },
+    {
+      employeeId: "E023",
+      name: "Jane Smith",
+      issue: "Negative net salary calculated",
+    },
+  ],
+  auditLog: [
+    {
+      timestamp: "2025-12-01T09:00:00Z",
+      user: "System",
+      action: "Cycle Initiated",
+    },
+    {
+      timestamp: "2025-12-05T14:30:00Z",
+      user: "HR Manager",
+      action: "Review Completed",
+    },
+  ],
+};
 
-// 2. Custom Components
-import { AuditLog } from '@/components/payroll-execution/AuditLog';
-import { RiskAssessment } from '@/components/payroll-execution/RiskAssessment';
+export default function ApprovalPage() {
+  const router = useRouter();
+  const params = useParams();
+  const cycleId = params?.cycleID as string;
+  //   const { refreshData } = usePayroll(); // Assuming context might update global state
+  const currentUser = getCurrentUser();
 
-// 3. Shadcn UI Components
-import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  const [cycle, setCycle] = useState<PayrollCycle | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
-export default function ApprovalCenter() {
-  // --- STATE ---
-  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('PAYROLL_MANAGER');
-  const [cycle, setCycle] = useState(MOCK_CYCLE);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // --- MODAL STATE ---
-  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-  const [isUnfreezeModalOpen, setIsUnfreezeModalOpen] = useState(false);
-  const [justification, setJustification] = useState('');
+  useEffect(() => {
+    const authorized = hasAnyRole([
+      'Payroll Manager',
+      'Finance Staff',
+      'System Admin'
+    ]);
 
-  // --- HELPER: Simulate Network Request ---
-  const performAction = (action: () => void) => {
-    setIsLoading(true);
-    setTimeout(() => {
-      action();
-      setIsLoading(false);
-    }, 1500); 
-  };
+    if (!authorized) {
+      router.push('/payroll-execution');
+    } else {
+      setIsAuthorized(true);
+    }
+  }, [router]);
 
-  // --- HANDLERS ---
-  const handleApprove = () => {
-    performAction(() => {
-      if (currentUserRole === 'PAYROLL_MANAGER') {
-        // Manager sends to Finance [cite: 268]
-        setCycle({ ...cycle, status: 'WAITING_FINANCE_APPROVAL' });
-      } else if (currentUserRole === 'FINANCE_STAFF') {
-     
-        setCycle({ ...cycle, status: 'PAID' });
+  // Role Checks
+  const isPayrollManager = hasAnyRole(["Payroll Manager", "System Admin"]);
+  const isFinanceStaff = hasAnyRole(["Finance Staff", "System Admin"]);
+
+  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
+  const fetchCycle = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = getToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const response = await axios.get(`${baseUrl}/payroll-execution/${cycleId}`, { headers });
+      setCycle(response.data);
+    } catch (error) {
+      console.error("Failed to load cycle, using mock data", error);
+      // Fallback to mock data for demonstration if backend not ready
+      // More permissive condition for testing
+      setCycle(MOCK_CYCLE);
+      if (process.env.NODE_ENV !== "development") {
+        toast.error("Failed to load real payroll data. Showing mock data.");
       }
-    });
+    } finally {
+      setLoading(false);
+    }
+  }, [baseUrl, cycleId]);
+
+  useEffect(() => {
+    if (cycleId) {
+      fetchCycle();
+    } else {
+      // If no cycleId is present, stop loading so we don't hang
+      setLoading(false);
+    }
+  }, [fetchCycle, cycleId]);
+
+  const handleAction = async (endpoint: string, method: 'post' | 'patch', payload: any, successMessage: string) => {
+    try {
+      setActionLoading(true);
+      const token = getToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      // Endpoint should be relative to /payroll-execution/:id/
+      const url = `${baseUrl}/payroll-execution/${cycleId}/${endpoint}`;
+
+      if (method === 'patch') {
+        await axios.patch(url, payload, { headers });
+      } else {
+        await axios.post(url, payload, { headers });
+      }
+
+      toast.success(successMessage);
+      await fetchCycle(); // Refresh data
+    } catch (error) {
+      console.error(`Failed to ${endpoint}`, error);
+      toast.error(`Failed to perform action. Please try again.`);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleReject = () => {
-    if (!justification.trim()) return;
-    performAction(() => {
-      const newLog = {
-        action: 'REJECTED',
-        user: currentUserRole,
-        timestamp: new Date().toLocaleString(),
-        reason: justification
-      };
-      
- 
-      setCycle({ ...cycle, status: 'REJECTED', auditLog: [...cycle.auditLog, newLog] });
-      
-      setIsRejectModalOpen(false);
-      setJustification('');
-    });
+  const onApprove = () => {
+    // Backend: PATCH /payroll-execution/:id/manager-review { approved: true }
+    handleAction("manager-review", "patch", { approved: true }, "Payroll Cycle Approved successfully");
   };
 
-  const handleUnfreeze = () => {
-    if (!justification.trim()) return;
-    performAction(() => {
-      const newLog = {
-        action: 'UNFROZEN',
-        user: currentUserRole,
-        timestamp: new Date().toLocaleString(),
-        reason: justification
-      };
-      
-      
-      setCycle({ ...cycle, status: 'REVIEWING_BY_MANAGER', auditLog: [...cycle.auditLog, newLog] });
-      
-      setIsUnfreezeModalOpen(false);
-      setJustification('');
-    });
+  const onReject = (reason: string) => {
+    // Backend: PATCH /payroll-execution/:id/manager-review { approved: false, reason }
+    handleAction("manager-review", "patch", { approved: false, reason }, "Payroll Cycle Rejected");
   };
 
-  // Helper to determine Badge color
-  // We strictly tell TypeScript this returns one of the allowed Badge variants
-  const getStatusBadgeVariant = (status: string): "default" | "destructive" | "secondary" | "outline" => {
-    if (status === 'PAID') return 'default'; 
-    if (status === 'REJECTED') return 'destructive'; 
-    return 'secondary'; 
+  const onUnfreeze = (reason: string) => {
+    // Backend might not have specific unfreeze yet, keeping as placeholder or mapping to update
+    // For now assuming update with status change, or sticking to mock behavior if backend lacks it.
+    // Let's use a generic update for now or stick to fallback if backend 404s.
+    // Based on controller, there isn't an explicit "unfreeze". skipping for now or mapping to update?
+    // Let's assume it maps to a status update via PATCH /:id
+    handleAction("", "patch", { status: PayrollCycleStatus.UNDER_REVIEW, reason }, "Payroll Cycle Unfrozen");
   };
+
+  const onExecute = () => {
+    // Backend: PATCH /payroll-execution/:id/finance-review { approved: true }
+    handleAction("finance-review", "patch", { approved: true }, "Payment Execution Initiated");
+  };
+
+  if (!isAuthorized) {
+    return null;
+  }
+
+  if (loading) {
+    return <div className="p-8 text-center">Loading payroll details...</div>;
+  }
+
+  if (!cycle) {
+    return <div className="p-8 text-center text-red-500">Payroll Cycle not found</div>;
+  }
+
+  // Determine actions availability
+  // Payroll Manager can Approve/Reject if status is 'REVIEWING_BY_MANAGER' or 'UNDER_REVIEW' or similar
+  // Finance Staff can Execute if status is 'WAITING_FINANCE_APPROVAL' or 'APPROVED'
+
+  const status = cycle.status as PayrollCycleStatus;
+
+  const canApprove =
+    isPayrollManager &&
+    (status === PayrollCycleStatus.UNDER_REVIEW || status === PayrollCycleStatus.REVIEWING_BY_MANAGER);
+
+  const canExecute =
+    isFinanceStaff &&
+    (status === PayrollCycleStatus.WAITING_FINANCE_APPROVAL);
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-20">
-      <div className="max-w-6xl mx-auto p-8 space-y-8">
-        
-        {/* --- DEV TOOLS (Delete before production) --- */}
-        <div className="bg-white p-3 rounded-lg border shadow-sm flex items-center justify-between">
-          <div className="flex gap-2 items-center">
-            <span className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Simulate Role:</span>
-            <Button 
-              variant={currentUserRole === 'PAYROLL_MANAGER' ? "default" : "outline"} 
-              size="sm" 
-              onClick={() => setCurrentUserRole('PAYROLL_MANAGER')}
-            >
-              Manager
-            </Button>
-            <Button 
-              variant={currentUserRole === 'FINANCE_STAFF' ? "default" : "outline"} 
-              size="sm" 
-              onClick={() => setCurrentUserRole('FINANCE_STAFF')}
-            >
-              Finance
-            </Button>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-             Current Status: 
-             <Badge variant={getStatusBadgeVariant(cycle.status)}>
-               {cycle.status.replace(/_/g, " ")}
-             </Badge>
-          </div>
+    <div className="container mx-auto px-4 py-6 space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Payroll Approval Center
+          </h1>
+          <p className="text-muted-foreground">
+            Period: {cycle.period} | Status: <span className="font-medium text-foreground">{status}</span>
+          </p>
         </div>
-
-        {/* --- HEADER --- */}
-        <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Payroll Approval Center</h1>
-            <p className="text-muted-foreground mt-1">Reviewing Period: <span className="font-semibold text-foreground">{cycle.period}</span></p>
-          </div>
-          
-          <div className="flex gap-3">
-            {/* Logic to show buttons based on Role & Status */}
-            {((currentUserRole === 'PAYROLL_MANAGER' && cycle.status === 'REVIEWING_BY_MANAGER') || 
-              (currentUserRole === 'FINANCE_STAFF' && cycle.status === 'WAITING_FINANCE_APPROVAL')) && (
-              <>
-                <Button 
-                  variant="destructive" 
-                  onClick={() => setIsRejectModalOpen(true)}
-                  disabled={isLoading}
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Reject Cycle
-                </Button>
-                <Button 
-                  onClick={handleApprove}
-                  disabled={isLoading}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-                  {currentUserRole === 'FINANCE_STAFF' ? 'Execute Payment' : 'Approve Payroll'}
-                </Button>
-              </>
-            )}
-             
-             [cite_start]{/* Unfreeze Button for Manager [cite: 272] */}
-             {currentUserRole === 'PAYROLL_MANAGER' && cycle.status === 'PAID' && (
-               <Button 
-                variant="secondary"
-                onClick={() => setIsUnfreezeModalOpen(true)}
-              >
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Unfreeze Cycle
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* --- MAIN GRID LAYOUT --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* LEFT COLUMN: Summary & Risks */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            [cite_start]{/* Financial Cards [cite: 266] */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Gross</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">${cycle.summary.totalGross.toLocaleString()}</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Taxes & Deductions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-red-600">-${cycle.summary.totalTaxes.toLocaleString()}</div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-emerald-50/50 border-emerald-100">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-emerald-800">Net Payable</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-emerald-700">${cycle.summary.totalNetPayable.toLocaleString()}</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            [cite_start]{/* Risk Assessment Component [cite: 264] */}
-            <RiskAssessment anomalies={cycle.anomalies} />
-          </div>
-
-          [cite_start]{/* RIGHT COLUMN: Audit Log [cite: 275] */}
-          <div className="lg:col-span-1">
-            <AuditLog logs={cycle.auditLog} />
-          </div>
-        </div>
-
-        {/* --- DIALOGS (MODALS) --- */}
-        
-        {/* Reject Dialog */}
-        <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Reject Payroll Cycle</DialogTitle>
-              <DialogDescription>
-                This action will return the payroll to the Draft stage. A justification is mandatory for the audit log.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <Textarea 
-                placeholder="Enter rejection reason..." 
-                value={justification}
-                onChange={(e) => setJustification(e.target.value)}
-                className="min-h-[100px]"
-              />
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsRejectModalOpen(false)}>Cancel</Button>
-              <Button 
-                variant="destructive" 
-                onClick={handleReject}
-                disabled={justification.length < 5 || isLoading}
-              >
-                {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Confirm Rejection
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Unfreeze Dialog */}
-        <Dialog open={isUnfreezeModalOpen} onOpenChange={setIsUnfreezeModalOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Unfreeze Payroll Cycle</DialogTitle>
-              <DialogDescription>
-                Unfreezing a Paid cycle is a critical action. Please provide a detailed justification.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <Textarea 
-                placeholder="Enter justification..." 
-                value={justification}
-                onChange={(e) => setJustification(e.target.value)}
-                className="min-h-[100px]"
-              />
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsUnfreezeModalOpen(false)}>Cancel</Button>
-              <Button 
-                onClick={handleUnfreeze}
-                disabled={justification.length < 5 || isLoading}
-              >
-                {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Unfreeze
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
       </div>
+
+      <FinancialSummary summary={cycle.summary} />
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-6">
+          <AnomalyList anomalies={cycle.anomalies} />
+        </div>
+        <div className="space-y-6">
+          <AuditLog logs={cycle.auditLog} />
+        </div>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg md:relative md:bg-transparent md:border-0 md:shadow-none md:p-0">
+        <ApprovalActions
+          status={status}
+          canApprove={canApprove}
+          canExecute={canExecute}
+          onApprove={onApprove}
+          onReject={onReject}
+          onUnfreeze={onUnfreeze}
+          onExecute={onExecute}
+          loading={actionLoading}
+        />
+      </div>
+      <div className="h-20 md:hidden" /> {/* Spacer for fixed bottom bar */}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 export enum PayrollCycleStatus {
   DRAFT = 'DRAFT',
+  REVIEWING_BY_MANAGER = 'REVIEWING_BY_MANAGER',
   UNDER_REVIEW = 'UNDER_REVIEW',
   WAITING_FINANCE_APPROVAL = 'WAITING_FINANCE_APPROVAL',
   PAID = 'PAID',
@@ -44,7 +45,7 @@ export interface CorrectionPayload {
   earningsDetails?: EarningsDto;
   deductionsDetails?: DeductionsDto;
   totalGrossSalary?: number;
-  totaDeductions?: number;
+  totalDeductions?: number;
   netPay?: number;
   paymentStatus?: string;
 }
@@ -56,4 +57,33 @@ export interface PayrollRun {
   totalGross: number;
   totalNet: number;
   employeeEntries: EmployeeDraftEntry[];
+}
+
+export interface AuditLogEntry {
+  timestamp: string;
+  user: string;
+  action: string;
+  reason?: string;
+}
+
+export type UserRole = 'PAYROLL_MANAGER' | 'FINANCE_STAFF' | 'HR_ADMIN';
+
+export interface PayrollAnomaly {
+  employeeId: string;
+  name: string;
+  issue: string;
+}
+
+export interface PayrollCycle {
+  id: string;
+  period: string;
+  status: PayrollCycleStatus | string;
+  summary: {
+    totalGross: number;
+    totalTaxes: number;
+    totalNetPayable: number;
+    employeeCount: number;
+  };
+  anomalies: PayrollAnomaly[];
+  auditLog: AuditLogEntry[];
 }

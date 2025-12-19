@@ -26,7 +26,7 @@ export default function NotFound() {
           The page you're looking for doesn't exist.
         </p>
         <Link href="/">
-          <Button variant="primary">
+          <Button variant="default">
             Return to Home
           </Button>
         </Link>

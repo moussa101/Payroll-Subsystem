@@ -132,7 +132,7 @@ function EditTaxRuleForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" disabled={loading}>
+              <Button type="submit" variant="default" disabled={loading}>
                 Update
               </Button>
             </div>
