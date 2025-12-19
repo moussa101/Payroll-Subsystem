@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { Button } from '@/components/ui/button';
+
 export interface EmployeePayroll {
     id: string;
     name: string;

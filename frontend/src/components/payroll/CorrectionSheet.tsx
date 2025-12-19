@@ -1,3 +1,9 @@
+"use client";
+
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { FormInput } from '@/components/ui/FormInput';
+import { Modal } from '@/components/ui/Modal';
 import React from 'react';
 
 // Correction Interface
@@ -125,6 +131,9 @@ export const CorrectionSheet: React.FC<CorrectionSheetProps> = ({ employee, isOp
                         <p className="text-2xl font-bold text-gray-900">${formData.netPay.toFixed(2)}</p>
                     </div>
 
+                <div className="flex justify-end gap-3 mt-6">
+                    <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                    <Button variant="default" onClick={handleSubmit}>Save Corrections</Button>
                     <div className="flex justify-end gap-3 mt-6">
                         <button 
                             onClick={onClose}

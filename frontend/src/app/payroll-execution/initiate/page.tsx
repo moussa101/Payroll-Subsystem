@@ -4,36 +4,45 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 import { PreRunCheckList } from '@/components/payroll/PreRunCheckList';
+import { FormInput } from '@/components/ui/FormInput'; // Reusing FormInput for date/select if possible, otherwise standard select
+
+const MOCK_CHECKS = [
+    { id: '1', description: 'Pending termination benefits verified', resolved: false },
+    { id: '2', description: 'New hire documents signed', resolved: false },
+    { id: '3', description: 'Bonus approvals completed', resolved: true },
+];
+
+import { hasAnyRole, getToken } from '@/lib/auth';
+
+// ... (existing imports)
 
 export default function InitiationPage() {
     const router = useRouter();
     const [period, setPeriod] = useState('2025-12');
     const [checks, setChecks] = useState<{ id: string; description: string; resolved: boolean }[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [loadingChecks, setLoadingChecks] = useState(true);
+    const [isAuthorized, setIsAuthorized] = useState(false);
 
-    useEffect(() => {
-        const fetchChecks = async () => {
-            try {
-                const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-                const headers = token ? { Authorization: `Bearer ${token}` } : {};
-                const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-                
-                // Replace with actual endpoint
-                const response = await axios.get(`${baseUrl}/payroll-execution/pre-run-checks`, { headers });
-                setChecks(response.data);
-            } catch (error) {
-                console.error('Failed to fetch pre-run checks:', error);
-                // Fallback to empty or show error
-                setChecks([]); 
-            } finally {
-                setLoadingChecks(false);
-            }
-        };
+    React.useEffect(() => {
+        const authorized = hasAnyRole([
+            'Payroll Specialist',
+            'Payroll Manager',
+            'System Admin'
+        ]);
 
-        fetchChecks();
-    }, []);
+        if (!authorized) {
+            // Redirect unauthorized users
+            router.push('/payroll-execution');
+        } else {
+            setIsAuthorized(true);
+        }
+    }, [router]);
+
+    if (!isAuthorized) {
+        return null;
+    }
 
     const handleToggleCheck = (id: string, resolved: boolean) => {
         setChecks(checks.map(c => c.id === id ? { ...c, resolved } : c));
@@ -44,7 +53,7 @@ export default function InitiationPage() {
     const handleGenerateDraft = async () => {
         setIsGenerating(true);
         try {
-            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            const token = getToken();
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
             const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
@@ -91,7 +100,9 @@ export default function InitiationPage() {
             </div>
 
             <div className="flex justify-end">
-                <button
+                <Button
+                    variant="default"
+                    size="lg"
                     onClick={handleGenerateDraft}
                     disabled={!allChecksResolved || isGenerating}
                     className={`px-6 py-2.5 rounded-lg text-sm font-medium text-white shadow-sm transition-all
