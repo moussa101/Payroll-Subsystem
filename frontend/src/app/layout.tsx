@@ -14,18 +14,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-50">
-        {children}
       <body
-        className={`${inter.className} antialiased`}
+        className={`${inter.className} antialiased bg-gray-50`}
         suppressHydrationWarning
       >
-        <div className="min-h-screen bg-gray-50 flex">
-          {sidebar ?? defaultSidebar}
-          <main className="flex-1">
-            {children}
-          </main>
-        </div>
+        {children}
       </body>
     </html>
   );

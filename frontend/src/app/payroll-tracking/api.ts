@@ -235,3 +235,15 @@ function refToLabel(ref: Ref, idKey?: keyof RefShape): string | undefined {
     (idKey ? (ref[idKey] as string | undefined) : undefined)
   );
 }
+
+async function fetchWithFallback<T>(url: string, fallback: T): Promise<T | any> {
+  try {
+    const res = await api.get(url);
+    return res.data;
+  } catch (err: any) {
+    if (err.response?.status === 404) {
+      return fallback;
+    }
+    throw err;
+  }
+}
