@@ -203,7 +203,7 @@ export default function EmployeeDetailPage() {
                     form.profilePictureUrl
                       ? form.profilePictureUrl.startsWith('http')
                         ? form.profilePictureUrl
-                        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}${form.profilePictureUrl}`
+                        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${form.profilePictureUrl}`
                       : ''
                   }
                   className="object-cover"

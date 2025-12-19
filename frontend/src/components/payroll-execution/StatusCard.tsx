@@ -5,7 +5,7 @@ interface StatusCardProps {
     status: PayrollCycleStatus | string;
     cyclePeriod: string;
     employeeCount: number;
-    totalAmount: number;
+    totalAmount?: number; // optional now
 }
 
 export const StatusCard: React.FC<StatusCardProps> = ({
@@ -65,7 +65,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({
                         Estimated Total
                     </p>
                     <p className="text-2xl font-bold text-gray-900">
-                        ${totalAmount.toLocaleString()}
+                        ${totalAmount != null ? totalAmount.toLocaleString() : '—'}
                     </p>
                 </div>
             </div>
