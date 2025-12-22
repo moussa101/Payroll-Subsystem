@@ -8,7 +8,7 @@ import { EmployeeProfileService } from '../employee-profile/employee-profile.ser
 // Service and DTOs
 import { PayrollConfigurationService } from './payroll-configuration.service';
 import { ConfigStatus, PolicyType, Applicability } from './enums/payroll-configuration-enums';
-import { UserRole } from '../auth/authorization/constants/roles.constant';
+import { UserRole } from '../auth/permissions.constant';
 
 // DTOs
 import { CreateCompanySettingsDto } from './dto/create-company-settings.dto';
@@ -68,10 +68,10 @@ const mockModelConstructor = (mockModel: any, mockInstance: any) => {
     findByIdAndDelete: mockModel.findByIdAndDelete,
     exec: mockModel.exec,
   };
-  
+
   // Set the constructor implementation
   mockModel.mockImplementation(() => mockInstance);
-  
+
   // Restore static methods
   Object.assign(mockModel, staticMethods);
 };
@@ -189,7 +189,7 @@ describe('PayrollConfigurationService', () => {
       mockSettingsModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
       });
-      
+
       // The mock constructor is already set up in createMockModel
       // Just need to make sure it returns the right instance
       const mockInstance = {
@@ -267,7 +267,7 @@ describe('PayrollConfigurationService', () => {
         then: (onFulfilled: any) => Promise.resolve(null).then(onFulfilled),
         catch: (onRejected: any) => Promise.resolve(null).catch(onRejected),
       });
-      
+
       // Mock the constructor pattern: new Model().save()
       const mockInstance = {
         ...updateDto,
@@ -517,27 +517,32 @@ describe('PayrollConfigurationService', () => {
   });
 
   describe('Insurance Brackets', () => {
-    const mockUser = {
+    const hrManagerUser = {
       userId: '507f1f77bcf86cd799439011',
-      role: UserRole.PAYROLL_SPECIALIST,
+      role: UserRole.HR_MANAGER,
       username: 'testuser',
+    };
+
+    const specialistUser = {
+      userId: '507f1f77bcf86cd799439012',
+      role: UserRole.PAYROLL_SPECIALIST,
+      username: 'specialist',
     };
 
     const createInsuranceDto: CreateInsuranceDto = {
       name: 'Social Insurance',
-      amount: 500,
       minSalary: 10000,
       maxSalary: 20000,
       employeeRate: 10,
       employerRate: 15,
     };
 
-    it('should create insurance bracket successfully', async () => {
+    it('should create insurance bracket successfully with HR_MANAGER role', async () => {
       const mockInsurance = {
         ...createInsuranceDto,
         _id: new Types.ObjectId(),
         status: ConfigStatus.DRAFT,
-        createdBy: new Types.ObjectId(mockUser.userId),
+        createdBy: new Types.ObjectId(hrManagerUser.userId),
         save: jest.fn().mockResolvedValue({
           ...createInsuranceDto,
           _id: new Types.ObjectId(),
@@ -552,10 +557,15 @@ describe('PayrollConfigurationService', () => {
       };
       mockModelConstructor(mockInsuranceModel, mockInstance);
 
-      const result = await service.createInsurance(createInsuranceDto, mockUser as any);
+      const result = await service.createInsurance(createInsuranceDto, hrManagerUser as any);
 
       expect(mockInsuranceModel).toHaveBeenCalled();
       expect(result).toBeDefined();
+    });
+
+    it('should throw ForbiddenException when non-HR_MANAGER/SYSTEM_ADMIN tries to create insurance', async () => {
+      await expect(service.createInsurance(createInsuranceDto, specialistUser as any))
+        .rejects.toThrow(ForbiddenException);
     });
 
     it('should throw BadRequestException when minSalary >= maxSalary', async () => {
@@ -565,11 +575,11 @@ describe('PayrollConfigurationService', () => {
         maxSalary: 15000,
       };
 
-      await expect(service.createInsurance(invalidDto, mockUser as any))
+      await expect(service.createInsurance(invalidDto, hrManagerUser as any))
         .rejects.toThrow(BadRequestException);
     });
 
-    it('should update insurance bracket successfully', async () => {
+    it('should update insurance bracket successfully with HR_MANAGER role', async () => {
       const updateDto = {
         name: 'Updated Insurance',
         minSalary: 12000,
@@ -589,12 +599,41 @@ describe('PayrollConfigurationService', () => {
       const result = await service.updateInsurance(
         '507f1f77bcf86cd799439011',
         updateDto,
-        mockUser as any,
+        hrManagerUser as any,
       );
 
       expect(mockInsuranceModel.findById).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
       expect(mockInsurance.save).toHaveBeenCalled();
       expect(result).toBeDefined();
+    });
+
+    it('should throw ForbiddenException when non-HR_MANAGER/SYSTEM_ADMIN tries to update insurance', async () => {
+      const updateDto = {
+        name: 'Updated Insurance',
+        minSalary: 12000,
+        maxSalary: 22000,
+      };
+
+      await expect(service.updateInsurance('507f1f77bcf86cd799439011', updateDto, specialistUser as any))
+        .rejects.toThrow(ForbiddenException);
+    });
+
+    it('should get insurance bracket by id', async () => {
+      const mockInsurance = {
+        _id: new Types.ObjectId(),
+        name: 'Social Insurance',
+        minSalary: 10000,
+        maxSalary: 20000,
+      };
+
+      mockInsuranceModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockInsurance),
+      });
+
+      const result = await service.getInsuranceById('507f1f77bcf86cd799439011');
+
+      expect(mockInsuranceModel.findById).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(result).toEqual(mockInsurance);
     });
   });
 
@@ -992,6 +1031,32 @@ describe('PayrollConfigurationService', () => {
       expect(result).toEqual(mockPayTypes);
     });
 
+    it('should get pay type by id', async () => {
+      const mockPayType = {
+        _id: new Types.ObjectId(),
+        type: 'Monthly',
+        amount: 20000,
+      };
+
+      mockPayTypeModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockPayType),
+      });
+
+      const result = await service.getPayTypeById('507f1f77bcf86cd799439011');
+
+      expect(mockPayTypeModel.findById).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(result).toEqual(mockPayType);
+    });
+
+    it('should throw NotFoundException when pay type not found', async () => {
+      mockPayTypeModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(service.getPayTypeById('invalid-id'))
+        .rejects.toThrow(NotFoundException);
+    });
+
     it('should get all payroll policies', async () => {
       const mockPolicies = [
         { _id: new Types.ObjectId(), policyName: 'Policy 1' },
@@ -1006,6 +1071,31 @@ describe('PayrollConfigurationService', () => {
 
       expect(mockPayrollPoliciesModel.find).toHaveBeenCalled();
       expect(result).toEqual(mockPolicies);
+    });
+
+    it('should get payroll policy by id', async () => {
+      const mockPolicy = {
+        _id: new Types.ObjectId(),
+        policyName: 'Overtime Policy',
+      };
+
+      mockPayrollPoliciesModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockPolicy),
+      });
+
+      const result = await service.getPayrollPolicyById('507f1f77bcf86cd799439011');
+
+      expect(mockPayrollPoliciesModel.findById).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(result).toEqual(mockPolicy);
+    });
+
+    it('should throw NotFoundException when payroll policy not found', async () => {
+      mockPayrollPoliciesModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(service.getPayrollPolicyById('invalid-id'))
+        .rejects.toThrow(NotFoundException);
     });
 
     it('should get all signing bonuses', async () => {
@@ -1024,6 +1114,32 @@ describe('PayrollConfigurationService', () => {
       expect(result).toEqual(mockBonuses);
     });
 
+    it('should get signing bonus by id', async () => {
+      const mockBonus = {
+        _id: new Types.ObjectId(),
+        positionName: 'Senior Developer',
+        amount: 10000,
+      };
+
+      mockBonusModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockBonus),
+      });
+
+      const result = await service.getSigningBonusById('507f1f77bcf86cd799439011');
+
+      expect(mockBonusModel.findById).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(result).toEqual(mockBonus);
+    });
+
+    it('should throw NotFoundException when signing bonus not found', async () => {
+      mockBonusModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(service.getSigningBonusById('invalid-id'))
+        .rejects.toThrow(NotFoundException);
+    });
+
     it('should get all termination benefits', async () => {
       const mockBenefits = [
         { _id: new Types.ObjectId(), name: 'End of Service Gratuity', amount: 15000 },
@@ -1038,6 +1154,32 @@ describe('PayrollConfigurationService', () => {
 
       expect(mockTermModel.find).toHaveBeenCalled();
       expect(result).toEqual(mockBenefits);
+    });
+
+    it('should get termination benefit by id', async () => {
+      const mockBenefit = {
+        _id: new Types.ObjectId(),
+        name: 'End of Service Gratuity',
+        amount: 15000,
+      };
+
+      mockTermModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockBenefit),
+      });
+
+      const result = await service.getTerminationBenefitById('507f1f77bcf86cd799439011');
+
+      expect(mockTermModel.findById).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+      expect(result).toEqual(mockBenefit);
+    });
+
+    it('should throw NotFoundException when termination benefit not found', async () => {
+      mockTermModel.findById.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(service.getTerminationBenefitById('invalid-id'))
+        .rejects.toThrow(NotFoundException);
     });
   });
 });
