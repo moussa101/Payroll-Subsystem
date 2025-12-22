@@ -15,59 +15,67 @@ const mockPayrollConfigurationService = {
   createSettings: jest.fn(),
   updateSettings: jest.fn(),
   getSettings: jest.fn(),
-  
+
   // Pay Grades
   createPayGrade: jest.fn(),
   updatePayGrade: jest.fn(),
   getPayGrades: jest.fn(),
+  getPayGradeById: jest.fn(),
   changePayGradeStatus: jest.fn(),
   deletePayGrade: jest.fn(),
-  
+
   // Payroll Policies
   createPayrollPolicy: jest.fn(),
   updatePayrollPolicy: jest.fn(),
   getPayrollPolicies: jest.fn(),
+  getPayrollPolicyById: jest.fn(),
   changePayrollPolicyStatus: jest.fn(),
   deletePayrollPolicy: jest.fn(),
-  
+
   // Tax Rules
   createTaxRule: jest.fn(),
   updateTaxRule: jest.fn(),
   approveTaxRule: jest.fn(),
   getTaxRules: jest.fn(),
+  getTaxRuleById: jest.fn(),
   deleteTaxRule: jest.fn(),
-  
+
   // Insurance Brackets
   createInsurance: jest.fn(),
   updateInsurance: jest.fn(),
   approveInsurance: jest.fn(),
   getInsuranceBrackets: jest.fn(),
-  
+  getInsuranceById: jest.fn(),
+
   // Allowances
   createAllowance: jest.fn(),
   updateAllowance: jest.fn(),
   approveAllowance: jest.fn(),
   getAllowances: jest.fn(),
+  getAllowanceById: jest.fn(),
   deleteAllowance: jest.fn(),
-  
+
   // Pay Types
   createPayType: jest.fn(),
   updatePayType: jest.fn(),
   getPayTypes: jest.fn(),
+  getPayTypeById: jest.fn(),
   approvePayType: jest.fn(),
   deletePayType: jest.fn(),
-  
+
   // Signing Bonus
   createSigningBonus: jest.fn(),
   updateSigningBonus: jest.fn(),
   getSigningBonuses: jest.fn(),
+  getSigningBonusById: jest.fn(),
   approveSigningBonus: jest.fn(),
   deleteSigningBonus: jest.fn(),
-  
+
   // Termination Benefits
   createTerminationBenefit: jest.fn(),
   updateTerminationBenefit: jest.fn(),
   getTerminationBenefits: jest.fn(),
+  getTerminationBenefitById: jest.fn(),
   approveTerminationBenefit: jest.fn(),
   deleteTerminationBenefit: jest.fn(),
 };
@@ -177,7 +185,7 @@ describe('PayrollConfigurationController', () => {
     it('should update pay grade', async () => {
       const updateDto = { grade: 'Updated Grade', baseSalary: 22000 };
       const mockPayGrade = { ...updateDto, _id: new Types.ObjectId() };
-      
+
       mockPayrollConfigurationService.updatePayGrade.mockResolvedValue(mockPayGrade);
 
       const result = await controller.updatePayGrade('123', updateDto, mockReq);
@@ -203,7 +211,7 @@ describe('PayrollConfigurationController', () => {
     it('should change pay grade status', async () => {
       const statusDto = { status: ConfigStatus.APPROVED };
       const mockResult = { _id: new Types.ObjectId(), status: ConfigStatus.APPROVED };
-      
+
       mockPayrollConfigurationService.changePayGradeStatus.mockResolvedValue(mockResult);
 
       const result = await controller.changePayGradeStatus('123', statusDto, mockReq);
@@ -258,7 +266,7 @@ describe('PayrollConfigurationController', () => {
     it('should update payroll policy', async () => {
       const updateDto = { policyName: 'Updated Policy' };
       const mockPolicy = { ...updateDto, _id: new Types.ObjectId() };
-      
+
       mockPayrollConfigurationService.updatePayrollPolicy.mockResolvedValue(mockPolicy);
 
       const result = await controller.updatePayrollPolicy('123', updateDto, mockReq);
@@ -284,7 +292,7 @@ describe('PayrollConfigurationController', () => {
     it('should change payroll policy status', async () => {
       const statusDto = { status: ConfigStatus.APPROVED };
       const mockResult = { _id: new Types.ObjectId(), status: ConfigStatus.APPROVED };
-      
+
       mockPayrollConfigurationService.changePayrollPolicyStatus.mockResolvedValue(mockResult);
 
       const result = await controller.changePayrollPolicyStatus('123', statusDto, mockReq);
@@ -332,7 +340,7 @@ describe('PayrollConfigurationController', () => {
     it('should update tax rule', async () => {
       const updateDto = { name: 'Updated Tax', rate: 15 };
       const mockTaxRule = { ...updateDto, _id: new Types.ObjectId() };
-      
+
       mockPayrollConfigurationService.updateTaxRule.mockResolvedValue(mockTaxRule);
 
       const result = await controller.updateTaxRule('123', updateDto, mockReq);
@@ -344,7 +352,7 @@ describe('PayrollConfigurationController', () => {
     it('should change tax status', async () => {
       const statusDto = { status: ConfigStatus.APPROVED };
       const mockResult = { _id: new Types.ObjectId(), status: ConfigStatus.APPROVED };
-      
+
       mockPayrollConfigurationService.approveTaxRule.mockResolvedValue(mockResult);
 
       const result = await controller.changeTaxStatus('123', statusDto, mockReq);
@@ -409,7 +417,7 @@ describe('PayrollConfigurationController', () => {
     it('should update insurance bracket', async () => {
       const updateDto = { name: 'Updated Insurance', minSalary: 12000 };
       const mockInsurance = { ...updateDto, _id: new Types.ObjectId() };
-      
+
       mockPayrollConfigurationService.updateInsurance.mockResolvedValue(mockInsurance);
 
       const result = await controller.updateInsurance('123', updateDto, mockReq);
@@ -421,7 +429,7 @@ describe('PayrollConfigurationController', () => {
     it('should change insurance status', async () => {
       const statusDto = { status: ConfigStatus.APPROVED };
       const mockResult = { _id: new Types.ObjectId(), status: ConfigStatus.APPROVED };
-      
+
       mockPayrollConfigurationService.approveInsurance.mockResolvedValue(mockResult);
 
       const result = await controller.changeInsuranceStatus('123', statusDto, mockReq);
@@ -441,6 +449,22 @@ describe('PayrollConfigurationController', () => {
       const result = await controller.getInsurance();
 
       expect(service.getInsuranceBrackets).toHaveBeenCalled();
+      expect(result).toEqual(mockInsurance);
+    });
+
+    it('should get insurance bracket by id', async () => {
+      const mockInsurance = {
+        _id: new Types.ObjectId(),
+        name: 'Social Insurance',
+        minSalary: 10000,
+        maxSalary: 20000,
+      };
+
+      mockPayrollConfigurationService.getInsuranceById.mockResolvedValue(mockInsurance);
+
+      const result = await controller.getInsuranceById('123');
+
+      expect(service.getInsuranceById).toHaveBeenCalledWith('123');
       expect(result).toEqual(mockInsurance);
     });
   });
@@ -472,7 +496,7 @@ describe('PayrollConfigurationController', () => {
     it('should update allowance', async () => {
       const updateDto = { name: 'Transport Allowance', amount: 3000 };
       const mockAllowance = { ...updateDto, _id: new Types.ObjectId() };
-      
+
       mockPayrollConfigurationService.updateAllowance.mockResolvedValue(mockAllowance);
 
       const result = await controller.updateAllowance('123', updateDto, mockReq);
@@ -484,7 +508,7 @@ describe('PayrollConfigurationController', () => {
     it('should change allowance status', async () => {
       const statusDto = { status: ConfigStatus.APPROVED };
       const mockResult = { _id: new Types.ObjectId(), status: ConfigStatus.APPROVED };
-      
+
       mockPayrollConfigurationService.approveAllowance.mockResolvedValue(mockResult);
 
       const result = await controller.changeAllowanceStatus('123', statusDto, mockReq);
@@ -545,7 +569,7 @@ describe('PayrollConfigurationController', () => {
     it('should update pay type', async () => {
       const updateDto = { type: 'Hourly Wage', amount: 50 };
       const mockPayType = { ...updateDto, _id: new Types.ObjectId() };
-      
+
       mockPayrollConfigurationService.updatePayType.mockResolvedValue(mockPayType);
 
       const result = await controller.updatePayType('123', updateDto, mockReq);
@@ -557,7 +581,7 @@ describe('PayrollConfigurationController', () => {
     it('should change pay type status', async () => {
       const statusDto = { status: ConfigStatus.APPROVED };
       const mockResult = { _id: new Types.ObjectId(), status: ConfigStatus.APPROVED };
-      
+
       mockPayrollConfigurationService.approvePayType.mockResolvedValue(mockResult);
 
       const result = await controller.changePayTypeStatus('123', statusDto, mockReq);
@@ -618,7 +642,7 @@ describe('PayrollConfigurationController', () => {
     it('should update signing bonus', async () => {
       const updateDto = { positionName: 'Lead Developer', amount: 15000 };
       const mockBonus = { ...updateDto, _id: new Types.ObjectId() };
-      
+
       mockPayrollConfigurationService.updateSigningBonus.mockResolvedValue(mockBonus);
 
       const result = await controller.updateSigningBonus('123', updateDto, mockReq);
@@ -630,7 +654,7 @@ describe('PayrollConfigurationController', () => {
     it('should change signing bonus status', async () => {
       const statusDto = { status: ConfigStatus.APPROVED };
       const mockResult = { _id: new Types.ObjectId(), status: ConfigStatus.APPROVED };
-      
+
       mockPayrollConfigurationService.approveSigningBonus.mockResolvedValue(mockResult);
 
       const result = await controller.changeBonusStatus('123', statusDto, mockReq);
@@ -692,7 +716,7 @@ describe('PayrollConfigurationController', () => {
     it('should update termination benefit', async () => {
       const updateDto = { name: 'Severance Package', amount: 20000 };
       const mockTermination = { ...updateDto, _id: new Types.ObjectId() };
-      
+
       mockPayrollConfigurationService.updateTerminationBenefit.mockResolvedValue(mockTermination);
 
       const result = await controller.updateTermination('123', updateDto, mockReq);
@@ -704,7 +728,7 @@ describe('PayrollConfigurationController', () => {
     it('should change termination benefit status', async () => {
       const statusDto = { status: ConfigStatus.APPROVED };
       const mockResult = { _id: new Types.ObjectId(), status: ConfigStatus.APPROVED };
-      
+
       mockPayrollConfigurationService.approveTerminationBenefit.mockResolvedValue(mockResult);
 
       const result = await controller.changeTermStatus('123', statusDto, mockReq);
