@@ -41,7 +41,7 @@ Built with modern technologies including **NestJS** (backend), **Next.js** (fron
 - Position and role definitions
 - Reporting relationships
 
-## Architecture
+## Architecture (Modular Layered)
 
 ### Backend (NestJS)
 ```
